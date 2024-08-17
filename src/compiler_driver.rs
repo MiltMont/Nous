@@ -29,14 +29,13 @@ pub struct CompilerDriver {
 
 impl CompilerDriver {
     pub fn build() -> CompilerDriver {
-        let args = CompilerDriver::parse();
-        args 
+        CompilerDriver::parse() 
     }
 
     fn preprocess_file(&self) -> Result<(), String> {
         if self.file.exists() {
 
-            let mut output_file = PathBuf::from(self.file.clone()); 
+            let mut output_file = self.file.clone(); 
             output_file.set_extension("i"); 
 
             Command::new("gcc")
@@ -57,7 +56,7 @@ impl CompilerDriver {
     }
 
     fn compile_preproc_file(&self) -> Result<(), String>{
-        let mut preproc_file = PathBuf::from(&self.file.clone()); 
+        let mut preproc_file = self.file.clone(); 
         preproc_file.set_extension("i"); 
 
         if preproc_file.exists() {
@@ -65,18 +64,25 @@ impl CompilerDriver {
             let mut output_assembler = PathBuf::from(&self.file); 
             output_assembler.set_extension("s");
 
+            // TODO: Remove this and implement the compiler
             Command::new("gcc")
             .args([
                 "-S", 
                 "-O", 
                 "-fno-asynchronous-unwind-tables", 
                 "-fcf-protection=none", 
-                &preproc_file.into_os_string().into_string().unwrap(), 
+                &preproc_file.clone().into_os_string().into_string().unwrap(), 
                 "-o", 
                 &output_assembler.into_os_string().into_string().unwrap(),
             ])
             .output()
             .expect("Error compiling file");
+            
+            // Deleting the preprocessed file
+            Command::new("rm")
+                .arg(preproc_file.into_os_string().into_string().unwrap())
+                .output()
+                .expect("Error deleting preprocessed file");
 
             Ok(())
         } else {
@@ -86,21 +92,29 @@ impl CompilerDriver {
 
     fn assemble_file(&self) -> Result<(), String> {
     
-        let mut assembly_file = PathBuf::from(self.file.clone()); 
+        let mut assembly_file = self.file.clone(); 
         assembly_file.set_extension("s");
 
         if assembly_file.exists() {
-            let mut output_file = PathBuf::from(self.file.clone()); 
+            let mut output_file = self.file.clone(); 
             output_file.set_extension(""); 
 
             Command::new("gcc")
                 .args([
-                    &assembly_file.into_os_string().into_string().unwrap(), 
+                    &assembly_file.clone().into_os_string().into_string().unwrap(), 
                     "-o", 
                     &output_file.into_os_string().into_string().unwrap(),  
                 ])
                 .output()
                 .expect("Failed assemblying file");
+            
+            // Deleting the assembly file. 
+            Command::new("rm")
+                .arg(
+                    assembly_file.into_os_string().into_string().unwrap()
+                )
+                .output()
+                .expect("Error deleting assembly file"); 
 
             Ok(())
         } else {
