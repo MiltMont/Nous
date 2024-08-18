@@ -5,27 +5,25 @@ mod tests {
     use logos::{Lexer, Logos};
     use nous::{lexer::Token, utils::read_file};
 
-
     /// Valid programs.
     #[test]
     fn test_tabs() -> std::io::Result<()> {
-        let contents = read_file("tests/files/valid/newlines.c")?; 
+        let contents = read_file("tests/files/valid/newlines.c")?;
 
         let lexer = Token::lexer(&contents);
 
         let tokens: Vec<Token> = vec![
-            Token::Int, 
-            Token::Identifier(String::from("main")), 
-            Token::LParen, 
-            Token::Void, 
-            Token::RParen, 
-            Token::LBrace, 
-            Token::Return, 
-            Token::Constant(0), 
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Constant(0),
             Token::Semicolon,
-            Token::RBrace, 
+            Token::RBrace,
         ];
-
 
         compare_tokens(lexer, tokens);
         Ok(())
@@ -35,19 +33,19 @@ mod tests {
     fn test_newlines() -> std::io::Result<()> {
         let contents = read_file("tests/files/valid/newlines.c")?;
 
-        let lexer = Token::lexer(&contents); 
+        let lexer = Token::lexer(&contents);
 
         let tokens: Vec<Token> = vec![
-            Token::Int, 
-            Token::Identifier(String::from("main")), 
-            Token::LParen, 
-            Token::Void, 
-            Token::RParen, 
-            Token::LBrace, 
-            Token::Return, 
-            Token::Constant(0), 
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Constant(0),
             Token::Semicolon,
-            Token::RBrace, 
+            Token::RBrace,
         ];
 
         compare_tokens(lexer, tokens);
@@ -59,103 +57,100 @@ mod tests {
     fn test_no_newlines() -> std::io::Result<()> {
         let contents = read_file("tests/files/valid/no_newlines.c")?;
 
-        let lexer = Token::lexer(&contents); 
+        let lexer = Token::lexer(&contents);
 
         let tokens: Vec<Token> = vec![
-            Token::Int, 
-            Token::Identifier(String::from("main")), 
-            Token::LParen, 
-            Token::Void, 
-            Token::RParen, 
-            Token::LBrace, 
-            Token::Return, 
-            Token::Constant(0), 
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Constant(0),
             Token::Semicolon,
-            Token::RBrace, 
+            Token::RBrace,
         ];
 
         compare_tokens(lexer, tokens);
 
         Ok(())
-
     }
 
     #[test]
     fn test_multidigit() -> std::io::Result<()> {
-        let contents = read_file("tests/files/valid/multi_digit.c")?; 
+        let contents = read_file("tests/files/valid/multi_digit.c")?;
 
-        let lexer = Token::lexer(&contents); 
+        let lexer = Token::lexer(&contents);
 
         let tokens = vec![
-            Token::Int, 
-            Token::Identifier(String::from("main")), 
-            Token::LParen, 
-            Token::Void, 
-            Token::RParen, 
-            Token::LBrace, 
-            Token::Return, 
-            Token::Constant(100), 
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Constant(100),
             Token::Semicolon,
-            Token::RBrace, 
+            Token::RBrace,
         ];
 
-        compare_tokens(lexer, tokens); 
+        compare_tokens(lexer, tokens);
         Ok(())
     }
 
     #[test]
     fn test_return_2() -> std::io::Result<()> {
+        let contents = read_file("tests/files/valid/return_2.c")?;
 
-        let contents = read_file("tests/files/valid/return_2.c")?; 
-
-        let lexer = Token::lexer(&contents); 
+        let lexer = Token::lexer(&contents);
 
         let tokens = vec![
-            Token::Int, 
-            Token::Identifier(String::from("main")), 
-            Token::LParen, 
-            Token::Void, 
-            Token::RParen, 
-            Token::LBrace, 
-            Token::Return, 
-            Token::Constant(2), 
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Constant(2),
             Token::Semicolon,
-            Token::RBrace, 
+            Token::RBrace,
         ];
 
         compare_tokens(lexer, tokens);
 
         Ok(())
- 
     }
 
     #[test]
     fn test_spaces() -> std::io::Result<()> {
-        let contents = read_file("tests/files/valid/spaces.c")?; 
+        let contents = read_file("tests/files/valid/spaces.c")?;
 
-        let lexer = Token::lexer(&contents); 
+        let lexer = Token::lexer(&contents);
 
         let tokens = vec![
-            Token::Int, 
-            Token::Identifier(String::from("main")), 
-            Token::LParen, 
-            Token::Void, 
-            Token::RParen, 
-            Token::LBrace, 
-            Token::Return, 
-            Token::Constant(0), 
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Constant(0),
             Token::Semicolon,
-            Token::RBrace, 
+            Token::RBrace,
         ];
 
         compare_tokens(lexer, tokens);
 
-        Ok(()) 
+        Ok(())
     }
 
     /// Invalid programs
     #[test]
-    #[should_panic(expected="Unexpected sign")]
+    #[should_panic(expected = "Unexpected sign")]
     fn test_at_sign() {
         let source = read_file("tests/files/invalid/at_sign.c").unwrap();
 
@@ -169,69 +164,66 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected="Invalid Token")]
+    #[should_panic(expected = "Invalid Token")]
     fn test_backslash() {
-        let source = read_file("tests/files/invalid/backslash.c").unwrap(); 
+        let source = read_file("tests/files/invalid/backslash.c").unwrap();
 
-        let lexer = Token::lexer(&source); 
+        let lexer = Token::lexer(&source);
 
         for result in lexer {
             if let Err(_) = result {
-                panic!("Invalid Token"); 
+                panic!("Invalid Token");
             }
         }
     }
 
     #[test]
-    #[should_panic(expected="Invalid Token")]
+    #[should_panic(expected = "Invalid Token")]
     fn test_backtick() {
-        let source = read_file("tests/files/invalid/backtick.c").unwrap(); 
+        let source = read_file("tests/files/invalid/backtick.c").unwrap();
 
-        let lexer = Token::lexer(&source); 
+        let lexer = Token::lexer(&source);
 
         for result in lexer {
             if let Err(_) = result {
-                panic!("Invalid Token"); 
+                panic!("Invalid Token");
             }
-        } 
+        }
     }
 
     #[test]
-    #[should_panic(expected="Invalid identifier")]
+    #[should_panic(expected = "Invalid identifier")]
     fn test_invalid_identifier() {
-        let source = read_file("tests/files/invalid/invalid_identifier.c").unwrap(); 
+        let source = read_file("tests/files/invalid/invalid_identifier.c").unwrap();
 
-        let lexer = Token::lexer(&source); 
+        let lexer = Token::lexer(&source);
 
         for result in lexer {
             if let Err(_) = result {
-                panic!("Invalid identifier"); 
+                panic!("Invalid identifier");
             }
-        } 
+        }
     }
-
 
     #[test]
-    #[should_panic(expected="Invalid identifier")]
+    #[should_panic(expected = "Invalid identifier")]
     fn test_invalid_identifier_2() {
-        let source = read_file("tests/files/invalid/invalid_identifier_2.c").unwrap(); 
+        let source = read_file("tests/files/invalid/invalid_identifier_2.c").unwrap();
 
-        let lexer = Token::lexer(&source); 
+        let lexer = Token::lexer(&source);
 
         for result in lexer {
             if let Err(_) = result {
-                panic!("Invalid identifier"); 
+                panic!("Invalid identifier");
             }
-        } 
+        }
     }
-    
 
     fn compare_tokens(lexer: Lexer<Token>, tokens: Vec<Token>) {
-        for (a,b) in zip(lexer, tokens) {
+        for (a, b) in zip(lexer, tokens) {
             if let Ok(token) = a {
-                assert_eq!(token, b); 
+                assert_eq!(token, b);
             }
         }
     }
 }
-

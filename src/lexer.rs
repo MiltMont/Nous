@@ -1,40 +1,38 @@
-use logos::Logos; 
+use logos::Logos;
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Debug, PartialEq, Clone)]
 // TODO: Skip block comments #[logos(skip r"\/*(?:[^*]|\*[^/])*\*\/")]
-#[logos(skip r"[ \t\n\f]+")] 
+#[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
 pub enum Token {
-    
     #[regex("[a-zA-Z_]+", |lex| lex.slice().to_owned())]
     Identifier(String),
 
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().unwrap())]
-    Constant(i64), 
+    Constant(i64),
 
     #[token("(")]
-    LParen, 
+    LParen,
 
     #[token(")")]
-    RParen, 
+    RParen,
 
     #[token("{")]
-    LBrace, 
+    LBrace,
 
     #[token("}")]
-    RBrace, 
+    RBrace,
 
     #[token(";")]
-    Semicolon, 
+    Semicolon,
 
     // Keywords
     #[token("int")]
-    Int, 
+    Int,
 
     #[token("void")]
-    Void, 
+    Void,
 
     #[token("return")]
-    Return, 
-
+    Return,
 }

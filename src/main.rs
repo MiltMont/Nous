@@ -1,4 +1,3 @@
-
 use nous::compiler_driver::CompilerDriver;
 
 fn main() -> Result<(), String> {
@@ -6,4 +5,3 @@ fn main() -> Result<(), String> {
 
     Ok(())
 }
-
