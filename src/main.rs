@@ -1,4 +1,4 @@
-use nous::{compiler_driver::CompilerDriver};
+use nous::compiler_driver::CompilerDriver;
 
 fn main() -> Result<(), String> {
     CompilerDriver::build().run()?;
