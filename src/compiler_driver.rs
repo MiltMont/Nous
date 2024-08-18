@@ -1,6 +1,12 @@
 use clap::Parser;
+use logos::Logos;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+
+use crate::assembly::{format_program, parse_program};
+use crate::parser::Parser as CParser; 
+use crate::lexer::Token;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -62,10 +68,11 @@ impl CompilerDriver {
             output_assembler.set_extension("s");
 
             // TODO: Remove this and implement the compiler
+            /*
             Command::new("gcc")
-                .args([
-                    "-S",
-                    "-O",
+            .args([
+                "-S",
+                "-O",
                     "-fno-asynchronous-unwind-tables",
                     "-fcf-protection=none",
                     &preproc_file.clone().into_os_string().into_string().unwrap(),
@@ -74,6 +81,24 @@ impl CompilerDriver {
                 ])
                 .output()
                 .expect("Error compiling file");
+            */
+
+            // Basic compiler implementation
+            let path = preproc_file.clone().into_os_string().into_string().unwrap(); 
+            let file = fs::read_to_string(path).expect("Unable to read file"); 
+            let mut lexer = Token::lexer(&file); 
+            let mut parser = CParser::new(&mut lexer); 
+            let output_path = output_assembler.clone().into_os_string().into_string().unwrap(); 
+
+            println!("Here! {}", output_path); 
+
+            match parser.parse_program() {
+                Ok(program) => {
+                    let inter = parse_program(program); 
+                    fs::write(output_path, format_program(inter)).expect("Unable to write file."); 
+                },
+                Err(e) => panic!("{e}"),
+            }
 
             // Deleting the preprocessed file
             Command::new("rm")
@@ -112,11 +137,11 @@ impl CompilerDriver {
                 .expect("Failed assemblying file");
 
             // Deleting the assembly file.
-            Command::new("rm")
+            /*Command::new("rm")
                 .arg(assembly_file.into_os_string().into_string().unwrap())
                 .output()
                 .expect("Error deleting assembly file");
-
+                    */
             Ok(())
         } else {
             Err(format!(
