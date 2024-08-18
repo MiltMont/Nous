@@ -1,16 +1,15 @@
 #[cfg(test)]
 mod tests {
     use std::iter::zip;
-    use std::{fs::File, io::BufReader};
-    use std::io::prelude::*;
 
     use logos::{Lexer, Logos};
-    use nous::lexer::Token;
+    use nous::{lexer::Token, utils::read_file};
+
 
     /// Valid programs.
     #[test]
     fn test_tabs() -> std::io::Result<()> {
-        let contents = read_file("tests/lexer_files/valid/newlines.c")?; 
+        let contents = read_file("tests/files/valid/newlines.c")?; 
 
         let lexer = Token::lexer(&contents);
 
@@ -34,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_newlines() -> std::io::Result<()> {
-        let contents = read_file("tests/lexer_files/valid/newlines.c")?;
+        let contents = read_file("tests/files/valid/newlines.c")?;
 
         let lexer = Token::lexer(&contents); 
 
@@ -58,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_no_newlines() -> std::io::Result<()> {
-        let contents = read_file("tests/lexer_files/valid/no_newlines.c")?;
+        let contents = read_file("tests/files/valid/no_newlines.c")?;
 
         let lexer = Token::lexer(&contents); 
 
@@ -83,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_multidigit() -> std::io::Result<()> {
-        let contents = read_file("tests/lexer_files/valid/multi_digit.c")?; 
+        let contents = read_file("tests/files/valid/multi_digit.c")?; 
 
         let lexer = Token::lexer(&contents); 
 
@@ -107,7 +106,7 @@ mod tests {
     #[test]
     fn test_return_2() -> std::io::Result<()> {
 
-        let contents = read_file("tests/lexer_files/valid/return_2.c")?; 
+        let contents = read_file("tests/files/valid/return_2.c")?; 
 
         let lexer = Token::lexer(&contents); 
 
@@ -132,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_spaces() -> std::io::Result<()> {
-        let contents = read_file("tests/lexer_files/valid/spaces.c")?; 
+        let contents = read_file("tests/files/valid/spaces.c")?; 
 
         let lexer = Token::lexer(&contents); 
 
@@ -158,7 +157,7 @@ mod tests {
     #[test]
     #[should_panic(expected="Unexpected sign")]
     fn test_at_sign() {
-        let source = read_file("tests/lexer_files/invalid/at_sign.c").unwrap();
+        let source = read_file("tests/files/invalid/at_sign.c").unwrap();
 
         let lexer = Token::lexer(&source);
 
@@ -172,7 +171,7 @@ mod tests {
     #[test]
     #[should_panic(expected="Invalid Token")]
     fn test_backslash() {
-        let source = read_file("tests/lexer_files/invalid/backslash.c").unwrap(); 
+        let source = read_file("tests/files/invalid/backslash.c").unwrap(); 
 
         let lexer = Token::lexer(&source); 
 
@@ -186,7 +185,7 @@ mod tests {
     #[test]
     #[should_panic(expected="Invalid Token")]
     fn test_backtick() {
-        let source = read_file("tests/lexer_files/invalid/backtick.c").unwrap(); 
+        let source = read_file("tests/files/invalid/backtick.c").unwrap(); 
 
         let lexer = Token::lexer(&source); 
 
@@ -200,7 +199,7 @@ mod tests {
     #[test]
     #[should_panic(expected="Invalid identifier")]
     fn test_invalid_identifier() {
-        let source = read_file("tests/lexer_files/invalid/invalid_identifier.c").unwrap(); 
+        let source = read_file("tests/files/invalid/invalid_identifier.c").unwrap(); 
 
         let lexer = Token::lexer(&source); 
 
@@ -215,7 +214,7 @@ mod tests {
     #[test]
     #[should_panic(expected="Invalid identifier")]
     fn test_invalid_identifier_2() {
-        let source = read_file("tests/lexer_files/invalid/invalid_identifier_2.c").unwrap(); 
+        let source = read_file("tests/files/invalid/invalid_identifier_2.c").unwrap(); 
 
         let lexer = Token::lexer(&source); 
 
@@ -225,15 +224,7 @@ mod tests {
             }
         } 
     }
-
-    fn read_file(path: &str) -> std::io::Result<String> {
-        let file = File::open(path)?;
-        let mut buf_reader = BufReader::new(file);
-        let mut contents = String::new();
-        buf_reader.read_to_string(&mut contents)?; 
-
-        Ok(contents)    
-    }
+    
 
     fn compare_tokens(lexer: Lexer<Token>, tokens: Vec<Token>) {
         for (a,b) in zip(lexer, tokens) {
@@ -243,3 +234,4 @@ mod tests {
         }
     }
 }
+

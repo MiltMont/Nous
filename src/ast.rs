@@ -2,27 +2,27 @@ use logos::Lexer;
 
 use crate::lexer::Token;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Constant(i64), 
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Return(Expression)
 } 
 
-#[derive(Debug)]
-pub struct Identifier(String); 
+#[derive(Debug, PartialEq)]
+pub struct Identifier(pub String); 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Function {
-    name: Identifier, 
-    body: Statement, 
+    pub name: Identifier, 
+    pub body: Statement, 
 }
 
-#[derive(Debug)]
-pub struct Program(Function);
+#[derive(Debug, PartialEq)]
+pub struct Program(pub Function);
 
 pub fn parse_statement(lexer: &mut Lexer<'_, Token>) -> Result<Statement, String> {
     if lexer.next() == Some(Ok(Token::Return)) {
