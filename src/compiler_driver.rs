@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use crate::assembly::{format_program, parse_program};
-use crate::parser::Parser as CParser; 
 use crate::lexer::Token;
+use crate::parser::Parser as CParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -67,7 +67,6 @@ impl CompilerDriver {
             let mut output_assembler = PathBuf::from(&self.file);
             output_assembler.set_extension("s");
 
-            // TODO: Remove this and implement the compiler
             /*
             Command::new("gcc")
             .args([
@@ -84,19 +83,21 @@ impl CompilerDriver {
             */
 
             // Basic compiler implementation
-            let path = preproc_file.clone().into_os_string().into_string().unwrap(); 
-            let file = fs::read_to_string(path).expect("Unable to read file"); 
-            let mut lexer = Token::lexer(&file); 
-            let mut parser = CParser::new(&mut lexer); 
-            let output_path = output_assembler.clone().into_os_string().into_string().unwrap(); 
-
-            println!("Here! {}", output_path); 
+            let path = preproc_file.clone().into_os_string().into_string().unwrap();
+            let file = fs::read_to_string(path).expect("Unable to read file");
+            let mut lexer = Token::lexer(&file);
+            let mut parser = CParser::new(&mut lexer);
+            let output_path = output_assembler
+                .clone()
+                .into_os_string()
+                .into_string()
+                .unwrap();
 
             match parser.parse_program() {
                 Ok(program) => {
-                    let inter = parse_program(program); 
-                    fs::write(output_path, format_program(inter)).expect("Unable to write file."); 
-                },
+                    let inter = parse_program(program);
+                    fs::write(output_path, format_program(inter)).expect("Unable to write file.");
+                }
                 Err(e) => panic!("{e}"),
             }
 
@@ -120,6 +121,7 @@ impl CompilerDriver {
         assembly_file.set_extension("s");
 
         if assembly_file.exists() {
+            dbg!("Assembly exists at {:?}", &assembly_file);
             let mut output_file = self.file.clone();
             output_file.set_extension("");
 
@@ -134,14 +136,13 @@ impl CompilerDriver {
                     &output_file.into_os_string().into_string().unwrap(),
                 ])
                 .output()
-                .expect("Failed assemblying file");
+                .expect("Failed assembling file");
 
-            // Deleting the assembly file.
-            /*Command::new("rm")
+            Command::new("rm")
                 .arg(assembly_file.into_os_string().into_string().unwrap())
                 .output()
                 .expect("Error deleting assembly file");
-                    */
+
             Ok(())
         } else {
             Err(format!(
