@@ -101,6 +101,31 @@ mod tests {
     }
 
     #[test]
+    fn test_negation() -> std::io::Result<()> {
+        let contents = read_file("tests/files/valid/negation.c")?;
+
+        let lexer = Token::lexer(&contents);
+
+        let tokens = vec![
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Negation,
+            Token::Constant(2),
+            Token::Semicolon,
+            Token::RBrace,
+        ];
+
+        compare_tokens(lexer, tokens);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_return_2() -> std::io::Result<()> {
         let contents = read_file("tests/files/valid/return_2.c")?;
 
@@ -139,6 +164,85 @@ mod tests {
             Token::LBrace,
             Token::Return,
             Token::Constant(0),
+            Token::Semicolon,
+            Token::RBrace,
+        ];
+
+        compare_tokens(lexer, tokens);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_decrement() -> std::io::Result<()> {
+        // This should not compile but Im checking if it recognizes this as
+        // a separate token.
+        let contents = read_file("tests/files/invalid/decrement_const.c")?;
+
+        let lexer = Token::lexer(&contents);
+
+        let tokens = vec![
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Decrement,
+            Token::Constant(2),
+            Token::Semicolon,
+            Token::RBrace,
+        ];
+
+        compare_tokens(lexer, tokens);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_nested_negation() -> std::io::Result<()> {
+        let contents = read_file("tests/files/valid/nested_negation.c")?;
+
+        let lexer = Token::lexer(&contents);
+
+        let tokens = vec![
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::Negation,
+            Token::LParen,
+            Token::Negation,
+            Token::Constant(2),
+            Token::RParen,
+            Token::Semicolon,
+            Token::RBrace,
+        ];
+
+        compare_tokens(lexer, tokens);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_bitwise_complement() -> std::io::Result<()> {
+        let contents = read_file("tests/files/valid/bit_comp.c")?;
+        let lexer = Token::lexer(&contents);
+
+        let tokens = vec![
+            Token::Int,
+            Token::Identifier(String::from("main")),
+            Token::LParen,
+            Token::Void,
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::BitComp,
+            Token::Constant(2),
             Token::Semicolon,
             Token::RBrace,
         ];
