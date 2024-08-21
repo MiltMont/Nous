@@ -26,6 +26,15 @@ pub enum Token {
     #[token(";")]
     Semicolon,
 
+    #[token("~")]
+    BitComp, // Bitwise complement operator
+
+    #[token("-")]
+    Negation,
+
+    #[token("--")]
+    Decrement,
+
     // Keywords
     #[token("int")]
     Int,
