@@ -81,6 +81,7 @@ pub fn format_instruction(instruction: Instruction) -> String {
 pub fn parse_operand(constant: Expression) -> Operand {
     match constant {
         Expression::Constant(i) => Operand::Imm(i),
+        Expression::Unary(_, _) => todo!(),
     }
 }
 

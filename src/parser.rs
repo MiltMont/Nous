@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use logos::Lexer;
 
 use crate::{
@@ -5,88 +7,109 @@ use crate::{
     lexer::Token,
 };
 
-pub struct Parser<'a> {
-    pub lexer: &'a mut Lexer<'a, Token>,
+pub struct Parser {
+    pub tokens: VecDeque<Token>,
+    pub current_token: Token,
+    pub peek_token: Token,
     pub errors: Vec<String>,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: &'a mut Lexer<'a, Token>) -> Self {
-        Parser {
-            lexer,
+impl Parser {
+    pub fn build(lexer: &mut Lexer<Token>) -> Self {
+        let mut tokens: VecDeque<Token> =
+            VecDeque::from_iter(lexer.into_iter().map(|x| x.unwrap()));
+
+        let current = tokens.pop_front().unwrap();
+        let peek = tokens.pop_front().unwrap();
+
+        Self {
+            tokens: tokens.clone(),
             errors: Vec::new(),
+            current_token: current,
+            peek_token: peek,
         }
     }
 
-    pub fn parse_expression(&mut self) -> Result<Expression, String> {
-        if let Some(Ok(Token::Constant(i))) = self.lexer.next() {
-            Ok(Expression::Constant(i))
-        } else {
-            let error = format!("Expected a constant, found {:?}", self.lexer.slice());
-            self.errors.push(error.clone());
-            Err(error)
-        }
-    }
+    pub fn parse_statement(&mut self) -> Result<Statement, String> {
+        if self.current_token_is(Token::Return) {
+            self.next_token();
 
-    pub fn parser_statement(&mut self) -> Result<Statement, String> {
-        if self.lexer.next() == Some(Ok(Token::Return)) {
             let expression = self.parse_expression()?;
 
-            if self.lexer.next() == Some(Ok(Token::Semicolon)) {
+            self.next_token();
+
+            if self.current_token_is(Token::Semicolon) {
+                self.next_token();
                 Ok(Statement::Return(expression))
             } else {
-                let error = format!("Expected ; found {:?}", self.lexer.slice());
-                self.errors.push(error.clone());
-                Err(error)
+                Err(format!("LOLLLLL"))
             }
         } else {
-            let error = format!("Expected Return, found {:?}", self.lexer.slice());
-            self.errors.push(error.clone());
-            Err(error)
+            Err(format!("LOLL"))
         }
     }
 
-    pub fn parse_identifier(&mut self) -> Result<Identifier, String> {
-        if let Some(Ok(Token::Identifier(s))) = self.lexer.next() {
-            Ok(Identifier(s))
+    fn parse_expression(&mut self) -> Result<Expression, String> {
+        match self.current_token {
+            Token::Constant(i) => Ok(Expression::Constant(i)),
+            Token::Negation => Ok(Expression::Unary(
+                crate::ast::UnaryOperator::Negate,
+                Box::new(self.parse_expression().unwrap()),
+            )),
+            _ => Err(format!(
+                "Expected expression, found {:?}",
+                self.current_token
+            )),
+        }
+    }
+
+    fn parser_identifier(&mut self) -> Result<Identifier, String> {
+        if let Token::Identifier(s) = self.current_token.clone() {
+            self.next_token();
+            Ok(Identifier(s.to_string()))
         } else {
-            let error = format!("Expected an identifier, found {:?}", self.lexer.slice());
-            self.errors.push(error.clone());
-
-            Err(error)
+            Err(format!(
+                "Error parsing identifier, got {:?}",
+                self.current_token.clone()
+            ))
         }
     }
 
-    pub fn parse_function(&mut self) -> Result<Function, String> {
-        if self.lexer.next() == Some(Ok(Token::Int)) {
-            let identifier = self.parse_identifier()?;
+    fn parse_function(&mut self) -> Result<Function, String> {
+        if self.current_token_is(Token::Int) {
+            self.next_token();
+            let identifier = self.parser_identifier()?;
 
             let structure = vec![Token::LParen, Token::Void, Token::RParen, Token::LBrace];
 
             for token in structure {
-                if self.lexer.next() != Some(Ok(token.clone())) {
-                    let error = format!("Expected {:?}, found {:?}", token, self.lexer.slice());
-                    self.errors.push(error.clone());
-                    return Err(error);
+                if !self.current_token_is(token.clone()) {
+                    self.next_token();
+                    return Err(format!(
+                        "Expected {:?}, got {:?}",
+                        token, self.current_token
+                    ));
+                } else {
+                    self.next_token();
                 }
             }
 
-            let statement = self.parser_statement()?;
+            let statement = self.parse_statement()?;
 
-            if self.lexer.next() == Some(Ok(Token::RBrace)) {
+            if self.current_token_is(Token::RBrace) {
+                self.next_token();
                 Ok(Function {
                     name: identifier,
                     body: statement,
                 })
             } else {
-                let error = format!("Expected }} got {:?}", self.lexer.slice());
-                self.errors.push(error.clone());
-                Err(error)
+                Err(format!(
+                    "Expected }} but found {:?}",
+                    self.current_token.clone()
+                ))
             }
         } else {
-            let error = format!("Expected int keyword, found {:?}", self.lexer.slice());
-            self.errors.push(error.clone());
-            Err(error)
+            Err(format!("al;sd"))
         }
     }
 
@@ -94,5 +117,21 @@ impl<'a> Parser<'a> {
         let function = self.parse_function()?;
 
         Ok(Program(function))
+    }
+
+    fn current_token_is(&self, token: Token) -> bool {
+        self.current_token == token
+    }
+
+    fn peek_token_is(&self, token: Token) -> bool {
+        self.peek_token == token
+    }
+
+    fn next_token(&mut self) {
+        self.current_token = self.peek_token.clone();
+        self.peek_token = self
+            .tokens
+            .pop_front()
+            .unwrap_or(self.current_token.clone());
     }
 }

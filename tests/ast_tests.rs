@@ -13,7 +13,7 @@ pub mod tests {
         let source = read_file("tests/files/valid/return_2.c")?;
 
         let mut lexer = Token::lexer(&source);
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::build(&mut lexer);
 
         let test = Program(Function {
             name: Identifier("main".to_owned()),

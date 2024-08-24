@@ -6,7 +6,7 @@ use std::process::Command;
 
 use crate::assembly::{format_program, parse_program};
 use crate::lexer::Token;
-use crate::parser::Parser as CParser;
+use crate::p::Parser as CParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
