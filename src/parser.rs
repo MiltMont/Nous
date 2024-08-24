@@ -42,10 +42,10 @@ impl Parser {
                 self.next_token();
                 Ok(Statement::Return(expression))
             } else {
-                Err(format!("LOLLLLL"))
+                Err(format!("Expected ; but found {:?}", self.current_token))
             }
         } else {
-            Err(format!("LOLL"))
+            Err(format!("Expected RETURN but found {:?}", self.current_token))
         }
     }
 
@@ -109,7 +109,7 @@ impl Parser {
                 ))
             }
         } else {
-            Err(format!("al;sd"))
+            Err(format!("Expected int but found {:?}", self.current_token))
         }
     }
 
