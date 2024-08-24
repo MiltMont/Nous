@@ -7,6 +7,7 @@ use std::process::Command;
 use crate::assembly::{format_program, parse_program};
 use crate::lexer::Token;
 use crate::p::Parser as CParser;
+use crate::parser::Parser as ASTParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -161,12 +162,25 @@ impl CompilerDriver {
             println!("{:?}", tokens);  
             Ok(())
         } else {
-            Err("Failed lexing file".to_string())
+            Err("Failed lexing file, no such file".to_string())
         }
     }
 
     fn parse_file(&self) -> Result<(), String> {
-        todo!()
+        if self.file.exists() {
+            let file = fs::read_to_string(&self.file).expect("Unable to read file."); 
+            let mut lexer = Token::lexer(&file); 
+            let mut parser = ASTParser::build(&mut lexer);
+
+            if let Ok(program) = parser.parse_program(){
+                println!("{:?}", program); 
+                Ok(())
+            } else {
+                Err(format!("{:?}", parser.errors))
+            }
+        } else {
+            Err("Failed parsing file, no such file".to_string())
+        }
     }
 
     fn code_gen(&self) -> Result<(), String> {
@@ -177,6 +191,11 @@ impl CompilerDriver {
 
         if self.lex {
             self.lex_file()?; 
+            return Ok(()); 
+        }
+
+        if self.parse {
+            self.parse_file()?; 
             return Ok(()); 
         }
 
