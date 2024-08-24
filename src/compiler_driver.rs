@@ -1,5 +1,5 @@
 use clap::Parser;
-use logos::Logos;
+use logos::{Lexer, Logos};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -152,7 +152,34 @@ impl CompilerDriver {
         }
     }
 
+    fn lex_file(&self) -> Result<(), String> {
+        if self.file.exists() {
+            let file = fs::read_to_string(&self.file).expect("Unable to read file.");
+            let lexer = Token::lexer(&file);
+            let tokens: Vec<Token>= lexer.clone().into_iter().map(|x| x.unwrap()).collect(); 
+            println!("{:?}", lexer);
+            println!("{:?}", tokens);  
+            Ok(())
+        } else {
+            Err("Failed lexing file".to_string())
+        }
+    }
+
+    fn parse_file(&self) -> Result<(), String> {
+        todo!()
+    }
+
+    fn code_gen(&self) -> Result<(), String> {
+        todo!()
+    }
+
     pub fn run(self) -> Result<(), String> {
+
+        if self.lex {
+            self.lex_file()?; 
+            return Ok(()); 
+        }
+
         self.preprocess_file()?;
         self.compile_preproc_file()?;
         self.assemble_file()?;
