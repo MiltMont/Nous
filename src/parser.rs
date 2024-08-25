@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::format};
+use std::collections::VecDeque;
 
 use logos::Lexer;
 
@@ -79,7 +79,7 @@ impl CParser {
                 if self.current_token_is(Token::RParen) {
                     inner_exp
                 } else {
-                    let error = format!("Missing closing parenthesis"); 
+                    let error = "Missing closing parenthesis".to_string(); 
                     self.errors.push(error.clone()); 
                     Err(error)
                 }
@@ -152,7 +152,7 @@ impl CParser {
                     self.current_token.clone()
                 ); 
                 self.errors.push(error.clone()); 
-                return Err(error); 
+                Err(error)
             }
         } else {
             let error =format!("Expected int but found {:?}", self.current_token);  
