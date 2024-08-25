@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum UnaryOperator {
     Complement,
@@ -15,8 +17,14 @@ pub enum Statement {
     Return(Expression),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Identifier(pub String);
+
+impl Debug for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}'", &self.0)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Function {

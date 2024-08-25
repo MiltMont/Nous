@@ -1,21 +1,46 @@
+use std::fmt::Debug;
+
 use crate::ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator};
 
-#[derive(Debug, Clone)]
-pub struct TacProgram(pub TacFunction); 
+#[derive(Clone)]
+pub struct TacProgram(pub TacFunction);
 
-#[derive(Debug, Clone)]
+impl Debug for TacProgram {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TacProgram(\n{:?}\n)",&self.0) 
+    }
+}
+
+#[derive(Clone)]
 pub struct TacFunction {
     identifier: Identifier, 
     body: Vec<Instruction>, 
 }
 
-#[derive(Debug, Clone)]
+impl Debug for TacFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+       
+        write!(f, "\tFunction(\n\tIdentifier: {:?} \n\tBody: {:?}\n\t)", &self.identifier, &self.body)
+    }
+}
+
+#[derive(Clone)]
 pub enum Instruction {
     Return(Val), 
     Unary {
         operator: UnaryOperator, 
         src: Val, 
         dst: Val, 
+    }
+}
+
+impl Debug for Instruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Return(arg0) => f.debug_tuple("\n\t\tReturn").field(arg0).finish(),
+            Self::Unary { operator, src, dst } => 
+            write!(f, "\n\t\tUnary({:?}, {:?}, {:?})", operator, src, dst), 
+        }
     }
 }
 
