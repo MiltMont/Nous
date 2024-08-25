@@ -7,6 +7,7 @@ use std::process::Command;
 use crate::assembly_parser::AssemblyParser;
 use crate::lexer::Token;
 use crate::parser::CParser;
+use crate::tac::TacGenerator;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -25,11 +26,16 @@ pub struct CompilerDriver {
     #[arg(long)]
     parse: bool,
 
-    /// Directs it to performing lexing, parsing, and
+    /// Directs preprocessor to run lexing, parsing, and
     /// assembly generation, but stop before code
     /// emission.
     #[arg(long)]
     codegen: bool,
+
+    /// Directs preprocessor to run everything up to (and including)
+    /// TAC generation. 
+    #[arg(long)]
+    tac: bool
 }
 
 impl CompilerDriver {
@@ -201,6 +207,27 @@ impl CompilerDriver {
         } 
     }
 
+    fn tac_gen(&self) -> Result<(), String> {
+        if self.file.exists() {
+            let file = fs::read_to_string(&self.file).expect("Unable to read file"); 
+
+            let mut lexer = Token::lexer(&file); 
+            let mut parser = CParser::build(&mut lexer); 
+
+            if let Ok(source) = parser.parse_program(){
+                let mut tac = TacGenerator::build(source); 
+                let tac_program = tac.parse_program();  
+                println!("{:?}", tac_program); 
+                
+                Ok(())
+            } else {
+                Err(format!("{:?}", parser.errors))
+            }
+        } else {
+            Err("Failed finding file, no such file".to_string())
+        }
+    }
+
     pub fn run(self) -> Result<(), String> {
 
         if self.lex {
@@ -215,6 +242,11 @@ impl CompilerDriver {
 
         if self.codegen {
             self.code_gen()?; 
+            return Ok(())
+        }
+
+        if self.tac {
+            self.tac_gen()?; 
             return Ok(())
         }
 
