@@ -1,9 +1,9 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt::format};
 
 use logos::Lexer;
 
 use crate::{
-    ast::{Expression, Function, Identifier, Program, Statement}, lexer::Token
+    ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator}, lexer::Token
 };
 
 pub struct CParser {
@@ -29,7 +29,11 @@ impl CParser {
         }
     }
 
-    pub fn parse_statement(&mut self) -> Result<Statement, String> {
+    fn parse_unary_operator(&mut self) -> Result<UnaryOperator, String> {
+        todo!()
+    } 
+
+    fn parse_statement(&mut self) -> Result<Statement, String> {
         if self.current_token_is(Token::Return) {
             self.next_token();
 
@@ -55,14 +59,36 @@ impl CParser {
     fn parse_expression(&mut self) -> Result<Expression, String> {
         match self.current_token {
             Token::Constant(i) => Ok(Expression::Constant(i)),
-            Token::Negation => Ok(Expression::Unary(
-                crate::ast::UnaryOperator::Negate,
+            Token::Negation => {
+                self.next_token(); 
+                Ok(Expression::Unary(
+                UnaryOperator::Negate,
                 Box::new(self.parse_expression().unwrap()),
-            )),
+            ))
+            }, 
+            Token::BitComp => {
+                self.next_token(); 
+                Ok(
+                    Expression::Unary(UnaryOperator::Complement, Box::new(self.parse_expression().unwrap()))
+                )
+            }, 
+            Token::LParen => {
+                self.next_token(); 
+                let inner_exp = self.parse_expression(); 
+                self.next_token(); 
+                if self.current_token_is(Token::RParen) {
+                    inner_exp
+                } else {
+                    let error = format!("Missing closing parenthesis"); 
+                    self.errors.push(error.clone()); 
+                    Err(error)
+                }
+            }
+            ,
             _ => 
             {
                 let error =format!(
-                    "Expected expression, found {:?}",
+                    "Malformed expression, found {:?}",
                     self.current_token
                 ); 
                 self.errors.push(error.clone()); 

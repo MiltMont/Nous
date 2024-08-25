@@ -6,8 +6,7 @@ use std::process::Command;
 
 use crate::assembly_parser::AssemblyParser;
 use crate::lexer::Token;
-use crate::p::Parser as CParser;
-use crate::parser::CParser as ASTParser;
+use crate::parser::CParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -87,7 +86,7 @@ impl CompilerDriver {
             let path = preproc_file.clone().into_os_string().into_string().unwrap();
             let file = fs::read_to_string(path).expect("Unable to read file");
             let mut lexer = Token::lexer(&file);
-            let mut parser = CParser::new(&mut lexer);
+            let mut parser = CParser::build(&mut lexer);
             let output_path = output_assembler
                 .clone()
                 .into_os_string()
@@ -171,7 +170,7 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file."); 
             let mut lexer = Token::lexer(&file); 
-            let mut parser = ASTParser::build(&mut lexer);
+            let mut parser = CParser::build(&mut lexer);
 
             if let Ok(program) = parser.parse_program(){
                 println!("{:?}", program); 
@@ -188,7 +187,7 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file."); 
             let mut lexer = Token::lexer(&file); 
-            let mut parser = ASTParser::build(&mut lexer);
+            let mut parser = CParser::build(&mut lexer);
 
             if let Ok(program) = parser.parse_program(){
                 let assembly = AssemblyParser::build(program); 
