@@ -1,4 +1,4 @@
-use crate::{assembly::AssemblyProgram, ast::{Expression, Identifier, UnaryOperator}};
+use crate::ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator};
 
 #[derive(Debug, Clone)]
 pub struct TacProgram(pub TacFunction); 
@@ -27,24 +27,59 @@ pub enum Val {
 
 #[derive(Debug, Clone)]
 pub struct TacGenerator {
-    pub program: TacProgram, 
-    temp_count: i64,
+    source: Program, 
+    temp_count: usize,
     instructions: Vec<Instruction>
 }
 
 impl TacGenerator {
-    fn build(assembly_program: AssemblyProgram) -> Self {
-        todo!() 
+    pub fn build(source: Program) -> Self {
+        Self {
+            source, 
+            temp_count: 0, 
+            instructions: Vec::new()
+        }
     }
 
-    fn emit_instructions(&mut self, expression: Expression) -> Val {
+    pub fn parse_program(&mut self) -> TacProgram {
+        let function = self.parse_function(self.source.0.clone()); 
+
+        TacProgram(function)
+    }
+
+    fn parse_function(&mut self, function: Function) -> TacFunction {
+
+        // Remove instructions resulting from previous use 
+        // of parse_statement. 
+        self.instructions = Vec::new(); 
+        let ret = self.parse_statement(function.body); 
+
+        self.instructions.push(ret); 
+
+        TacFunction {
+            identifier: function.name, 
+            body: self.instructions.clone()
+        }
+    }
+
+    fn parse_statement(&mut self, statement: Statement) -> Instruction {
+        match statement {
+            Statement::Return(expression) => {
+                let val = self.parse_val(expression); 
+
+                Instruction::Return(val)
+            },
+        }
+    }
+
+    fn parse_val(&mut self, expression: Expression) -> Val {
 
         match expression {
             Expression::Constant(i) => 
                 Val::Constant(i)
             ,
             Expression::Unary(op, inner) => {
-                let src = self.emit_instructions(*inner); 
+                let src = self.parse_val(*inner); 
                 let dst_name = self.make_temporary_name();
                 let dst = Val::Var(Identifier(dst_name)); 
                 self.instructions.push(
