@@ -13,12 +13,27 @@ pub struct AssemblyFunction {
 #[derive(Debug, Clone)]
 pub enum Instruction {
     Mov { src: Operand, dst: Operand },
+    Unary(UnaryOperator, Operand), 
+    AllocateStack(i64), 
     Ret,
+}
+
+#[derive(Debug, Clone)]
+pub enum UnaryOperator {
+    Neg, 
+    Not
 }
 
 #[derive(Debug, Clone)]
 pub enum Operand {
     Imm(i64),
-    Register,
+    Register(Reg),
+    Pseudo(Identifier), 
+    Stack(i64)
 }
 
+#[derive(Debug, Clone)]
+pub enum Reg {
+    AX, 
+    R10, 
+}
