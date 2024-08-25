@@ -13,8 +13,8 @@ impl Debug for TacProgram {
 
 #[derive(Clone)]
 pub struct TacFunction {
-    identifier: Identifier, 
-    body: Vec<Instruction>, 
+    pub identifier: Identifier, 
+    pub body: Vec<Instruction>, 
 }
 
 impl Debug for TacFunction {

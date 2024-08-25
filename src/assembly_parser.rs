@@ -1,12 +1,13 @@
-use std::{env, fs};
+use std::{env, fs, ops::Neg};
 
-use crate::{assembly::{AssemblyFunction, AssemblyProgram, Instruction, Operand}, ast::{Expression, Function, Program, Statement}};
+use crate::{assembly::{AssemblyFunction, AssemblyProgram, Instruction as AssemblyInstruction, Operand, Reg, UnaryOperator as AssemblyUnaryOperator}, ast::{Expression, Function, Program, Statement, UnaryOperator}, tac::{Instruction, TacFunction, TacProgram, Val}};
 
 #[derive(Clone, Debug)]
 pub struct AssemblyParser {
     pub program: AssemblyProgram, 
 }
 
+/*
 impl AssemblyParser {
     pub fn build(c_program: Program) -> Self {
         let program = AssemblyParser::parse_program(c_program); 
@@ -90,5 +91,59 @@ impl AssemblyParser {
         }
     }
     
+}
+
+ */
+
+impl AssemblyParser {
+    pub fn build(c_program: TacProgram) -> Self {
+        let program = AssemblyParser::convert_program(c_program); 
+
+        Self {
+            program
+        }
+
+    }
+
+    fn convert_program(program: TacProgram) -> AssemblyProgram {
+        todo!()
+    }
+
+    fn convert_function(self, function: TacFunction) -> AssemblyFunction {
+        let instructions = function.body.into_iter().map(|x| self.convert_instruction(x)).collect(); 
+
+        AssemblyFunction { name: function.identifier, instructions: instructions }
+    }
+
+    fn convert_instruction(&self, instruction: Instruction) -> Vec<AssemblyInstruction> {
+        match instruction {
+            Instruction::Return(val) => {
+                vec![
+                    AssemblyInstruction::Mov { src: self.convert_operand(val), dst: Operand::Register(Reg::AX) },
+                    AssemblyInstruction::Ret
+                ]
+            },
+            Instruction::Unary { operator, src, dst } => {
+                vec![
+                    AssemblyInstruction::Mov { src: self.convert_operand(src), dst: self.convert_operand(dst.clone()) }, 
+                    AssemblyInstruction::Unary(self.convert_operator(operator), self.convert_operand(dst))
+                ]
+            },
+        }
+    }
+
+    fn convert_operator(&self, operator: UnaryOperator) -> AssemblyUnaryOperator {
+        match operator {
+            UnaryOperator::Complement => AssemblyUnaryOperator::Not,
+            UnaryOperator::Negate => AssemblyUnaryOperator::Neg,
+        }
+    } 
+
+    fn convert_operand(&self, operand: Val) -> Operand {
+        match operand {
+            Val::Constant(i) => Operand::Imm(i),
+            Val::Var(id) => Operand::Pseudo(id),
+        }
+    }
 }
 
