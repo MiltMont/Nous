@@ -261,7 +261,7 @@ mod tests {
         let lexer = Token::lexer(&source);
 
         for result in lexer {
-            if let Err(_) = result {
+            if result.is_err() {
                 panic!("Unexpected sign");
             }
         }
@@ -275,7 +275,7 @@ mod tests {
         let lexer = Token::lexer(&source);
 
         for result in lexer {
-            if let Err(_) = result {
+            if result.is_err() {
                 panic!("Invalid Token");
             }
         }
@@ -289,7 +289,7 @@ mod tests {
         let lexer = Token::lexer(&source);
 
         for result in lexer {
-            if let Err(_) = result {
+            if result.is_err() {
                 panic!("Invalid Token");
             }
         }
@@ -303,7 +303,7 @@ mod tests {
         let lexer = Token::lexer(&source);
 
         for result in lexer {
-            if let Err(_) = result {
+            if result.is_err() {
                 panic!("Invalid identifier");
             }
         }
@@ -317,7 +317,7 @@ mod tests {
         let lexer = Token::lexer(&source);
 
         for result in lexer {
-            if let Err(_) = result {
+            if result.is_err() {
                 panic!("Invalid identifier");
             }
         }

@@ -5,3 +5,4 @@ pub mod lexer;
 pub mod p;
 pub mod parser;
 pub mod utils;
+pub mod assembly_parser;

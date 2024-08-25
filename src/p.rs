@@ -29,7 +29,7 @@ impl<'a> Parser<'a> {
                 _ => Err("NONE".to_owned()),
             }
         } else {
-            return Err("LOOOL".to_owned());
+            Err("LOOOL".to_owned())
         }
     }
 

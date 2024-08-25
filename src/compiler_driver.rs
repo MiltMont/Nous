@@ -1,13 +1,13 @@
 use clap::Parser;
-use logos::{Lexer, Logos};
+use logos::Logos;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::assembly::{format_program, parse_program};
+use crate::assembly_parser::AssemblyParser;
 use crate::lexer::Token;
 use crate::p::Parser as CParser;
-use crate::parser::Parser as ASTParser;
+use crate::parser::CParser as ASTParser;
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -96,8 +96,9 @@ impl CompilerDriver {
 
             match parser.parse_program() {
                 Ok(program) => {
-                    let inter = parse_program(program);
-                    fs::write(output_path, format_program(inter)).expect("Unable to write file.");
+                    let assembly = AssemblyParser::build(program); 
+                    println!("Writing: "); 
+                    assembly.write(output_path); 
                 }
                 Err(e) => panic!("{e}"),
             }
@@ -157,7 +158,7 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
             let lexer = Token::lexer(&file);
-            let tokens: Vec<Token>= lexer.clone().into_iter().map(|x| x.unwrap()).collect(); 
+            let tokens: Vec<Token>= lexer.clone().map(|x| x.unwrap()).collect(); 
             println!("{:?}", lexer);
             println!("{:?}", tokens);  
             Ok(())
@@ -184,7 +185,21 @@ impl CompilerDriver {
     }
 
     fn code_gen(&self) -> Result<(), String> {
-        todo!()
+        if self.file.exists() {
+            let file = fs::read_to_string(&self.file).expect("Unable to read file."); 
+            let mut lexer = Token::lexer(&file); 
+            let mut parser = ASTParser::build(&mut lexer);
+
+            if let Ok(program) = parser.parse_program(){
+                let assembly = AssemblyParser::build(program); 
+                println!("{:?}", assembly); 
+                Ok(())
+            } else {
+                Err(format!("{:?}", parser.errors))
+            }
+        } else {
+            Err("Failed parsing file, no such file".to_string())
+        } 
     }
 
     pub fn run(self) -> Result<(), String> {
@@ -197,6 +212,11 @@ impl CompilerDriver {
         if self.parse {
             self.parse_file()?; 
             return Ok(()); 
+        }
+
+        if self.codegen {
+            self.code_gen()?; 
+            return Ok(())
         }
 
         self.preprocess_file()?;

@@ -3,18 +3,17 @@ use std::collections::VecDeque;
 use logos::Lexer;
 
 use crate::{
-    ast::{Expression, Function, Identifier, Program, Statement},
-    lexer::Token,
+    ast::{Expression, Function, Identifier, Program, Statement}, lexer::Token
 };
 
-pub struct Parser {
+pub struct CParser {
     pub tokens: VecDeque<Token>,
     pub current_token: Token,
     pub peek_token: Token,
     pub errors: Vec<String>,
 }
 
-impl Parser {
+impl CParser {
     pub fn build(lexer: &mut Lexer<Token>) -> Self {
         let mut tokens: VecDeque<Token> =
             VecDeque::from_iter(lexer.into_iter().map(|x| x.unwrap()));
