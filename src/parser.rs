@@ -41,10 +41,14 @@ impl CParser {
                 self.next_token();
                 Ok(Statement::Return(expression))
             } else {
-                Err(format!("Expected ; but found {:?}", self.current_token))
+                let error = format!("Expected ; but found {:?}", self.current_token); 
+                self.errors.push(error.clone()); 
+                Err(error)
             }
         } else {
-            Err(format!("Expected RETURN but found {:?}", self.current_token))
+            let error = format!("Expected RETURN but found {:?}", self.current_token); 
+            self.errors.push(error.clone()); 
+            Err(error)
         }
     }
 
@@ -55,10 +59,16 @@ impl CParser {
                 crate::ast::UnaryOperator::Negate,
                 Box::new(self.parse_expression().unwrap()),
             )),
-            _ => Err(format!(
-                "Expected expression, found {:?}",
-                self.current_token
-            )),
+            _ => 
+            {
+                let error =format!(
+                    "Expected expression, found {:?}",
+                    self.current_token
+                ); 
+                self.errors.push(error.clone()); 
+                Err(error)
+            }
+            ,
         }
     }
 
@@ -67,10 +77,14 @@ impl CParser {
             self.next_token();
             Ok(Identifier(s.to_string()))
         } else {
-            Err(format!(
+
+            let error = format!(
                 "Error parsing identifier, got {:?}",
                 self.current_token.clone()
-            ))
+            ); 
+
+            self.errors.push(error.clone()); 
+            Err(error)
         }
     }
 
@@ -84,10 +98,14 @@ impl CParser {
             for token in structure {
                 if !self.current_token_is(token.clone()) {
                     self.next_token();
-                    return Err(format!(
+
+                    let error = format!(
                         "Expected {:?}, got {:?}",
                         token, self.current_token
-                    ));
+                    ); 
+
+                    self.errors.push(error.clone()); 
+                    return Err(error); 
                 } else {
                     self.next_token();
                 }
@@ -102,13 +120,18 @@ impl CParser {
                     body: statement,
                 })
             } else {
-                Err(format!(
+
+                let error = format!(
                     "Expected }} but found {:?}",
                     self.current_token.clone()
-                ))
+                ); 
+                self.errors.push(error.clone()); 
+                return Err(error); 
             }
         } else {
-            Err(format!("Expected int but found {:?}", self.current_token))
+            let error =format!("Expected int but found {:?}", self.current_token);  
+            self.errors.push(error.clone()); 
+            Err(error)
         }
     }
 
