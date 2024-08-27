@@ -33,9 +33,9 @@ pub struct CompilerDriver {
     codegen: bool,
 
     /// Directs preprocessor to run everything up to (and including)
-    /// TAC generation. 
+    /// TAC generation.
     #[arg(long)]
-    tac: bool
+    tac: bool,
 }
 
 impl CompilerDriver {
@@ -101,9 +101,10 @@ impl CompilerDriver {
 
             match parser.parse_program() {
                 Ok(program) => {
-                    let assembly = AssemblyParser::build(program); 
-                    println!("Writing: "); 
-                    assembly.write(output_path); 
+                    let tac = TacGenerator::build(program).parse_program();
+                    let assembly = AssemblyParser::new(tac);
+                    println!("Writing: ");
+                    //assembly.write(output_path);
                 }
                 Err(e) => panic!("{e}"),
             }
@@ -163,9 +164,9 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
             let lexer = Token::lexer(&file);
-            let tokens: Vec<Token>= lexer.clone().map(|x| x.unwrap()).collect(); 
+            let tokens: Vec<Token> = lexer.clone().map(|x| x.unwrap()).collect();
             println!("{:?}", lexer);
-            println!("{:?}", tokens);  
+            println!("{:?}", tokens);
             Ok(())
         } else {
             Err("Failed lexing file, no such file".to_string())
@@ -174,12 +175,12 @@ impl CompilerDriver {
 
     fn parse_file(&self) -> Result<(), String> {
         if self.file.exists() {
-            let file = fs::read_to_string(&self.file).expect("Unable to read file."); 
-            let mut lexer = Token::lexer(&file); 
+            let file = fs::read_to_string(&self.file).expect("Unable to read file.");
+            let mut lexer = Token::lexer(&file);
             let mut parser = CParser::build(&mut lexer);
 
-            if let Ok(program) = parser.parse_program(){
-                println!("{:?}", program); 
+            if let Ok(program) = parser.parse_program() {
+                println!("{:?}", program);
                 Ok(())
             } else {
                 Err(format!("{:?}", parser.errors))
@@ -191,34 +192,35 @@ impl CompilerDriver {
 
     fn code_gen(&self) -> Result<(), String> {
         if self.file.exists() {
-            let file = fs::read_to_string(&self.file).expect("Unable to read file."); 
-            let mut lexer = Token::lexer(&file); 
+            let file = fs::read_to_string(&self.file).expect("Unable to read file.");
+            let mut lexer = Token::lexer(&file);
             let mut parser = CParser::build(&mut lexer);
 
-            if let Ok(program) = parser.parse_program(){
-                let assembly = AssemblyParser::build(program); 
-                println!("{:?}", assembly); 
+            if let Ok(program) = parser.parse_program() {
+                let tac = TacGenerator::build(program).parse_program();
+                let assembly = AssemblyParser::new(tac).convert_program();
+                println!("{:?}", assembly);
                 Ok(())
             } else {
                 Err(format!("{:?}", parser.errors))
             }
         } else {
             Err("Failed parsing file, no such file".to_string())
-        } 
+        }
     }
 
     fn tac_gen(&self) -> Result<(), String> {
         if self.file.exists() {
-            let file = fs::read_to_string(&self.file).expect("Unable to read file"); 
+            let file = fs::read_to_string(&self.file).expect("Unable to read file");
 
-            let mut lexer = Token::lexer(&file); 
-            let mut parser = CParser::build(&mut lexer); 
+            let mut lexer = Token::lexer(&file);
+            let mut parser = CParser::build(&mut lexer);
 
-            if let Ok(source) = parser.parse_program(){
-                let mut tac = TacGenerator::build(source); 
-                let tac_program = tac.parse_program();  
-                println!("{:?}", tac_program); 
-                
+            if let Ok(source) = parser.parse_program() {
+                let mut tac = TacGenerator::build(source);
+                let tac_program = tac.parse_program();
+                println!("{:?}", tac_program);
+
                 Ok(())
             } else {
                 Err(format!("{:?}", parser.errors))
@@ -229,25 +231,24 @@ impl CompilerDriver {
     }
 
     pub fn run(self) -> Result<(), String> {
-
         if self.lex {
-            self.lex_file()?; 
-            return Ok(()); 
+            self.lex_file()?;
+            return Ok(());
         }
 
         if self.parse {
-            self.parse_file()?; 
-            return Ok(()); 
+            self.parse_file()?;
+            return Ok(());
         }
 
         if self.codegen {
-            self.code_gen()?; 
-            return Ok(())
+            self.code_gen()?;
+            return Ok(());
         }
 
         if self.tac {
-            self.tac_gen()?; 
-            return Ok(())
+            self.tac_gen()?;
+            return Ok(());
         }
 
         self.preprocess_file()?;
