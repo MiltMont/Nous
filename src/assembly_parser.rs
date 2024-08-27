@@ -1,11 +1,9 @@
-use std::{env, fs, ops::Neg};
-
 use crate::{
     assembly::{
         AssemblyFunction, AssemblyInstruction, AssemblyProgram, Operand, Reg,
         UnaryOperator as AssemblyUnaryOperator,
     },
-    ast::{Expression, Function, Program, Statement, UnaryOperator},
+    ast::UnaryOperator,
     tac::{Instruction, TacFunction, TacProgram, Val},
 };
 
@@ -124,7 +122,7 @@ impl AssemblyParser {
 
         AssemblyFunction {
             name: function.identifier,
-            instructions: instructions,
+            instructions,
         }
     }
 
