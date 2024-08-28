@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use crate::assembly_parser::AssemblyParser;
+use crate::ast::Identifier;
 use crate::lexer::Token;
 use crate::parser::CParser;
 use crate::tac::TacGenerator;
@@ -198,8 +199,14 @@ impl CompilerDriver {
 
             if let Ok(program) = parser.parse_program() {
                 let tac = TacGenerator::build(program).parse_program();
-                let assembly = AssemblyParser::new(tac).convert_program();
-                println!("{:?}", assembly);
+                let mut assembly = AssemblyParser::new(tac);
+                let assembly_program = assembly.convert_program();
+
+                let with_stack = assembly.replace_pseudo_registers();
+
+                println!("{:?}", assembly_program);
+
+                println!("{:?}", with_stack.clone());
                 Ok(())
             } else {
                 Err(format!("{:?}", parser.errors))

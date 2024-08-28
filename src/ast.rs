@@ -17,7 +17,7 @@ pub enum Statement {
     Return(Expression),
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Hash, Eq)]
 pub struct Identifier(pub String);
 
 impl Debug for Identifier {

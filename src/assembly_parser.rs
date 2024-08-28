@@ -1,3 +1,5 @@
+use std::{clone, collections::HashMap};
+
 use crate::{
     assembly::{
         AssemblyFunction, AssemblyInstruction, AssemblyProgram, Operand, Reg,
@@ -11,6 +13,8 @@ use crate::{
 pub struct AssemblyParser {
     pub source: TacProgram,
     pub program: Option<AssemblyProgram>,
+    pub pseudo_registers: HashMap<Operand, i64>,
+    offset: i64,
 }
 
 /*
@@ -106,14 +110,20 @@ impl AssemblyParser {
         Self {
             source: tac_program,
             program: None,
+            pseudo_registers: HashMap::new(),
+            offset: 0,
         }
     }
 
-    pub fn convert_program(self) -> AssemblyProgram {
-        AssemblyProgram(self.convert_function(self.source.0.clone()))
+    pub fn convert_program(&mut self) -> AssemblyProgram {
+        self.program = Some(AssemblyProgram(
+            self.convert_function(self.source.0.clone()),
+        ));
+
+        self.program.clone().unwrap()
     }
 
-    fn convert_function(&self, function: TacFunction) -> AssemblyFunction {
+    fn convert_function(&mut self, function: TacFunction) -> AssemblyFunction {
         let mut instructions = Vec::new();
 
         for instruction in function.body {
@@ -126,7 +136,7 @@ impl AssemblyParser {
         }
     }
 
-    fn convert_instruction(&self, instruction: Instruction) -> Vec<AssemblyInstruction> {
+    fn convert_instruction(&mut self, instruction: Instruction) -> Vec<AssemblyInstruction> {
         match instruction {
             Instruction::Return(val) => {
                 vec![
@@ -159,10 +169,58 @@ impl AssemblyParser {
         }
     }
 
-    fn convert_operand(&self, operand: Val) -> Operand {
+    fn convert_operand(&mut self, operand: Val) -> Operand {
         match operand {
             Val::Constant(i) => Operand::Imm(i),
-            Val::Var(id) => Operand::Pseudo(id),
+            Val::Var(id) => {
+                // Updating offset whenever we encounter a new identifier
+                if !self
+                    .pseudo_registers
+                    .contains_key(&Operand::Pseudo(id.clone()))
+                {
+                    self.offset += 4;
+                }
+
+                self.pseudo_registers
+                    .insert(Operand::Pseudo(id.clone()), self.offset);
+
+                Operand::Pseudo(id)
+            }
+        }
+    }
+
+    fn obtain_stack(&self, operand: Operand) -> Operand {
+        if self.pseudo_registers.contains_key(&operand) {
+            Operand::Stack(*self.pseudo_registers.get(&operand).unwrap())
+        } else {
+            operand
+        }
+    }
+
+    fn convert_register(&mut self, instruction: AssemblyInstruction) -> AssemblyInstruction {
+        match instruction {
+            AssemblyInstruction::Mov { src, dst } => AssemblyInstruction::Mov {
+                src: self.obtain_stack(src),
+                dst: self.obtain_stack(dst),
+            },
+            AssemblyInstruction::Unary(s, d) => AssemblyInstruction::Unary(s, self.obtain_stack(d)),
+            AssemblyInstruction::AllocateStack(i) => AssemblyInstruction::AllocateStack(i),
+            AssemblyInstruction::Ret => AssemblyInstruction::Ret,
+        }
+    }
+
+    pub fn replace_pseudo_registers(mut self) -> Option<AssemblyProgram> {
+        if let Some(program) = &self.program {
+            let temp: Vec<AssemblyInstruction> = program.clone().0.instructions;
+            let test: Vec<AssemblyInstruction> =
+                temp.into_iter().map(|x| self.convert_register(x)).collect();
+
+            Some(AssemblyProgram(AssemblyFunction {
+                name: self.program.unwrap().0.name,
+                instructions: test,
+            }))
+        } else {
+            None
         }
     }
 }

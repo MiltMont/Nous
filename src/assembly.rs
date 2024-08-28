@@ -57,7 +57,7 @@ pub enum UnaryOperator {
     Not,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Operand {
     Imm(i64),
     Register(Reg),
@@ -65,7 +65,7 @@ pub enum Operand {
     Stack(i64),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Reg {
     AX,
     R10,
