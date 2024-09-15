@@ -1,4 +1,4 @@
-use std::{clone, collections::HashMap};
+use std::{clone, collections::HashMap, path::is_separator, vec};
 
 use crate::{
     assembly::{
@@ -219,6 +219,45 @@ impl AssemblyParser {
                 name: self.program.unwrap().0.name,
                 instructions: test,
             }))
+        } else {
+            None
+        }
+    }
+
+    pub fn replace_pseudo_reg(&mut self) -> &mut Self  {
+        // TODO: Make this safe by removing unwraps.
+        let temp_instructions: Vec<AssemblyInstruction> = self.program.as_mut().unwrap().0.instructions.clone(); 
+
+        let new: Vec<AssemblyInstruction> = temp_instructions.into_iter().map(
+            |x| self.convert_register(x)
+        ).collect();
+
+        self.program.as_mut().unwrap().0.instructions = new;  
+
+        self 
+    }
+
+
+    pub fn allocate_stack(&mut self) -> Option<AssemblyProgram> {
+        if let Some(program) = &self.program {
+            // TODO: Fix this crappy implementation.
+            let instructions = program.0.instructions.clone(); 
+
+            let stack = AssemblyInstruction::AllocateStack(self.offset);
+
+            let mut new_instructions: Vec<AssemblyInstruction> = vec![]; 
+
+            new_instructions.push(stack); 
+
+            for instruction in instructions {
+                new_instructions.push(instruction); 
+            }
+
+            Some(AssemblyProgram(AssemblyFunction {
+                name: self.program.clone().unwrap().0.name, 
+                instructions: new_instructions 
+            }))
+
         } else {
             None
         }
