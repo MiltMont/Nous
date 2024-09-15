@@ -1,8 +1,10 @@
 use clap::Parser;
 use logos::Logos;
-use std::fs;
-use std::path::PathBuf;
+use std::fs::{self, File};
+use std::path::{Path, PathBuf};
 use std::process::Command;
+
+use std::io::prelude::*;
 
 use crate::assembly_parser::AssemblyParser;
 use crate::ast::Identifier;
@@ -106,9 +108,29 @@ impl CompilerDriver {
             match parser.parse_program() {
                 Ok(program) => {
                     let tac = TacGenerator::build(program).parse_program();
-                    let assembly = AssemblyParser::new(tac);
+                    let mut assembly = AssemblyParser::new(tac);
+                    assembly.convert_program(); 
+                    let test = assembly.replace_pseudo_reg()
+                        .rewrite_mov()
+                        .allocate_stack(); 
+
+                    let result = test.unwrap().format(); 
+
                     println!("Writing: ");
-                    //assembly.write(output_path);
+
+                    let path = Path::new(&output_path); 
+                    let display = path.display(); 
+
+                    // Open a file in write-only mode, returns `io::Result<File>`
+                    let mut file = match File::create(&path) {
+                        Err(why) => panic!("couldn't create {}: {}", display, why),
+                        Ok(file) => file,
+                    };
+
+                    match file.write_all(result.as_bytes()) {
+                        Err(why) => panic!("couldn't write to {}: {}", display, why),
+                        Ok(_) => println!("successfully wrote to {}", display),
+                    }
                 }
                 Err(e) => panic!("{e}"),
             }
@@ -254,11 +276,11 @@ impl CompilerDriver {
                 let mut assembly = AssemblyParser::new(tac);
                 assembly.convert_program();
  
-                assembly.replace_pseudo_reg()
+                let test = assembly.replace_pseudo_reg()
                     .rewrite_mov()
                     .allocate_stack();
 
-                let result = assembly.program.unwrap().format(); 
+                let result = test.unwrap().format(); 
                 println!("{}", result);
 
                 Ok(())
@@ -298,7 +320,7 @@ impl CompilerDriver {
 
         self.preprocess_file()?;
         self.compile_preproc_file()?;
-        self.assemble_file()?;
+        //self.assemble_file()?;
 
         Ok(())
     }
