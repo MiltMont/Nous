@@ -202,12 +202,15 @@ impl CompilerDriver {
                 let mut assembly = AssemblyParser::new(tac);
                 let assembly_program = assembly.convert_program();
 
-                let with_stack = assembly.replace_pseudo_reg().allocate_stack();
+                let with_stack = 
+                    assembly.replace_pseudo_reg()
+                    .rewrite_mov()
+                    .allocate_stack();
 
                 
                 println!("{:?}", assembly_program);
 
-                println!("{:?}", with_stack.clone());
+                println!("{:?}", with_stack.unwrap());
 
                 Ok(())
             } else {
