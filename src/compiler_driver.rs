@@ -37,6 +37,9 @@ pub struct CompilerDriver {
     /// TAC generation.
     #[arg(long)]
     tac: bool,
+
+    #[arg(long)]
+    emitcode: bool, 
 }
 
 impl CompilerDriver {
@@ -207,10 +210,8 @@ impl CompilerDriver {
                     .rewrite_mov()
                     .allocate_stack();
 
-                
-                println!("{:?}", assembly_program);
-
-                println!("{:?}", with_stack.unwrap());
+                println!("{:?}\n", assembly_program);
+                println!("{:?}", with_stack.clone());
 
                 Ok(())
             } else {
@@ -242,6 +243,33 @@ impl CompilerDriver {
         }
     }
 
+    fn emit_code(&self) -> Result<(), String> {
+        if self.file.exists() {
+            let file = fs::read_to_string(&self.file).expect("Unable to read file.");
+            let mut lexer = Token::lexer(&file);
+            let mut parser = CParser::build(&mut lexer);
+
+            if let Ok(program) = parser.parse_program() {
+                let tac = TacGenerator::build(program).parse_program();
+                let mut assembly = AssemblyParser::new(tac);
+                assembly.convert_program();
+ 
+                assembly.replace_pseudo_reg()
+                    .rewrite_mov()
+                    .allocate_stack();
+
+                let result = assembly.program.unwrap().format(); 
+                println!("{}", result);
+
+                Ok(())
+            } else {
+                Err(format!("{:?}", parser.errors))
+            }
+        } else {
+            Err("Failed parsing file, no such file".to_string())
+        }
+    }
+
     pub fn run(self) -> Result<(), String> {
         if self.lex {
             self.lex_file()?;
@@ -261,6 +289,11 @@ impl CompilerDriver {
         if self.tac {
             self.tac_gen()?;
             return Ok(());
+        }
+
+        if self.emitcode {
+            self.emit_code()?;
+            return Ok(())
         }
 
         self.preprocess_file()?;

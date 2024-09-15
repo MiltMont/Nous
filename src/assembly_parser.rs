@@ -176,6 +176,7 @@ impl AssemblyParser {
     }
 
     pub fn rewrite_mov(&mut self) -> &mut  Self {
+
         let temp_instructions: Vec<AssemblyInstruction> = self.program.as_mut().unwrap().0.instructions.clone(); 
         let mut new_instructions = vec![]; 
 
@@ -199,4 +200,8 @@ impl AssemblyParser {
 
         self
     }
+
+    // Formating functions 
+
 }
+
