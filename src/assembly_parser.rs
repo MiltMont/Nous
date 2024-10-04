@@ -1,4 +1,4 @@
-use std::{clone, collections::HashMap, path::is_separator, vec};
+use std::{collections::HashMap, vec};
 
 use crate::{
     assembly::{
@@ -136,72 +136,76 @@ impl AssemblyParser {
         }
     }
 
-    pub fn replace_pseudo_reg(&mut self) -> &mut Self  {
+    pub fn replace_pseudo_reg(&mut self) -> &mut Self {
         // TODO: Make this safe by removing unwraps.
-        let temp_instructions: Vec<AssemblyInstruction> = self.program.as_mut().unwrap().0.instructions.clone(); 
+        let temp_instructions: Vec<AssemblyInstruction> =
+            self.program.as_mut().unwrap().0.instructions.clone();
 
-        let new: Vec<AssemblyInstruction> = temp_instructions.into_iter().map(
-            |x| self.convert_register(x)
-        ).collect();
+        let new: Vec<AssemblyInstruction> = temp_instructions
+            .into_iter()
+            .map(|x| self.convert_register(x))
+            .collect();
 
-        self.program.as_mut().unwrap().0.instructions = new;  
+        self.program.as_mut().unwrap().0.instructions = new;
 
-        self 
+        self
     }
-
 
     pub fn allocate_stack(&mut self) -> Option<AssemblyProgram> {
         if let Some(program) = &self.program {
             // TODO: Fix this crappy implementation.
-            let instructions = program.0.instructions.clone(); 
+            let instructions = program.0.instructions.clone();
 
             let stack = AssemblyInstruction::AllocateStack(self.offset);
 
-            let mut new_instructions: Vec<AssemblyInstruction> = vec![]; 
+            let mut new_instructions: Vec<AssemblyInstruction> = vec![];
 
-            new_instructions.push(stack); 
+            new_instructions.push(stack);
 
             for instruction in instructions {
-                new_instructions.push(instruction); 
+                new_instructions.push(instruction);
             }
 
             Some(AssemblyProgram(AssemblyFunction {
-                name: self.program.clone().unwrap().0.name, 
-                instructions: new_instructions 
+                name: self.program.clone().unwrap().0.name,
+                instructions: new_instructions,
             }))
-
         } else {
             None
         }
     }
 
-    pub fn rewrite_mov(&mut self) -> &mut  Self {
-
-        let temp_instructions: Vec<AssemblyInstruction> = self.program.as_mut().unwrap().0.instructions.clone(); 
-        let mut new_instructions = vec![]; 
+    pub fn rewrite_mov(&mut self) -> &mut Self {
+        let temp_instructions: Vec<AssemblyInstruction> =
+            self.program.as_mut().unwrap().0.instructions.clone();
+        let mut new_instructions = vec![];
 
         for instruction in temp_instructions {
             match &instruction {
                 AssemblyInstruction::Mov { src, dst } => {
                     if matches!(src, Operand::Stack(_)) && matches!(dst, Operand::Stack(_)) {
-
-                        new_instructions.push(AssemblyInstruction::Mov { src: src.clone(), dst: Operand::Register(Reg::R10) }); 
-                        new_instructions.push(AssemblyInstruction::Mov { src: Operand::Register(Reg::R10), dst: dst.clone()}); 
-
+                        new_instructions.push(AssemblyInstruction::Mov {
+                            src: src.clone(),
+                            dst: Operand::Register(Reg::R10),
+                        });
+                        new_instructions.push(AssemblyInstruction::Mov {
+                            src: Operand::Register(Reg::R10),
+                            dst: dst.clone(),
+                        });
                     } else {
-                        new_instructions.push(instruction.clone()); 
+                        new_instructions.push(instruction.clone());
                     }
-                },
-                _ => {new_instructions.push(instruction);} 
+                }
+                _ => {
+                    new_instructions.push(instruction);
+                }
             }
         }
 
-        self.program.as_mut().unwrap().0.instructions = new_instructions; 
+        self.program.as_mut().unwrap().0.instructions = new_instructions;
 
         self
     }
 
-    // Formating functions 
-
+    // Formating functions
 }
-

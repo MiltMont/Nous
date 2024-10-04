@@ -3,7 +3,8 @@ use std::collections::VecDeque;
 use logos::Lexer;
 
 use crate::{
-    ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator}, lexer::Token
+    ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator},
+    lexer::Token,
 };
 
 pub struct CParser {
@@ -14,7 +15,9 @@ pub struct CParser {
 }
 
 impl CParser {
+    /// Builds an AST from a Lexer.
     pub fn build(lexer: &mut Lexer<Token>) -> Self {
+        // TODO: Handle unwraps in a better way.
         let mut tokens: VecDeque<Token> =
             VecDeque::from_iter(lexer.into_iter().map(|x| x.unwrap()));
 
@@ -31,7 +34,7 @@ impl CParser {
 
     fn parse_unary_operator(&mut self) -> Result<UnaryOperator, String> {
         todo!()
-    } 
+    }
 
     fn parse_statement(&mut self) -> Result<Statement, String> {
         if self.current_token_is(Token::Return) {
@@ -45,13 +48,13 @@ impl CParser {
                 self.next_token();
                 Ok(Statement::Return(expression))
             } else {
-                let error = format!("Expected ; but found {:?}", self.current_token); 
-                self.errors.push(error.clone()); 
+                let error = format!("Expected ; but found {:?}", self.current_token);
+                self.errors.push(error.clone());
                 Err(error)
             }
         } else {
-            let error = format!("Expected RETURN but found {:?}", self.current_token); 
-            self.errors.push(error.clone()); 
+            let error = format!("Expected RETURN but found {:?}", self.current_token);
+            self.errors.push(error.clone());
             Err(error)
         }
     }
@@ -60,41 +63,36 @@ impl CParser {
         match self.current_token {
             Token::Constant(i) => Ok(Expression::Constant(i)),
             Token::Negation => {
-                self.next_token(); 
+                self.next_token();
                 Ok(Expression::Unary(
-                UnaryOperator::Negate,
-                Box::new(self.parse_expression().unwrap()),
-            ))
-            }, 
+                    UnaryOperator::Negate,
+                    Box::new(self.parse_expression().unwrap()),
+                ))
+            }
             Token::BitComp => {
-                self.next_token(); 
-                Ok(
-                    Expression::Unary(UnaryOperator::Complement, Box::new(self.parse_expression().unwrap()))
-                )
-            }, 
+                self.next_token();
+                Ok(Expression::Unary(
+                    UnaryOperator::Complement,
+                    Box::new(self.parse_expression().unwrap()),
+                ))
+            }
             Token::LParen => {
-                self.next_token(); 
-                let inner_exp = self.parse_expression(); 
-                self.next_token(); 
+                self.next_token();
+                let inner_exp = self.parse_expression();
+                self.next_token();
                 if self.current_token_is(Token::RParen) {
                     inner_exp
                 } else {
-                    let error = "Missing closing parenthesis".to_string(); 
-                    self.errors.push(error.clone()); 
+                    let error = "Missing closing parenthesis".to_string();
+                    self.errors.push(error.clone());
                     Err(error)
                 }
             }
-            ,
-            _ => 
-            {
-                let error =format!(
-                    "Malformed expression, found {:?}",
-                    self.current_token
-                ); 
-                self.errors.push(error.clone()); 
+            _ => {
+                let error = format!("Malformed expression, found {:?}", self.current_token);
+                self.errors.push(error.clone());
                 Err(error)
             }
-            ,
         }
     }
 
@@ -103,13 +101,12 @@ impl CParser {
             self.next_token();
             Ok(Identifier(s.to_string()))
         } else {
-
             let error = format!(
                 "Error parsing identifier, got {:?}",
                 self.current_token.clone()
-            ); 
+            );
 
-            self.errors.push(error.clone()); 
+            self.errors.push(error.clone());
             Err(error)
         }
     }
@@ -125,13 +122,10 @@ impl CParser {
                 if !self.current_token_is(token.clone()) {
                     self.next_token();
 
-                    let error = format!(
-                        "Expected {:?}, got {:?}",
-                        token, self.current_token
-                    ); 
+                    let error = format!("Expected {:?}, got {:?}", token, self.current_token);
 
-                    self.errors.push(error.clone()); 
-                    return Err(error); 
+                    self.errors.push(error.clone());
+                    return Err(error);
                 } else {
                     self.next_token();
                 }
@@ -146,17 +140,13 @@ impl CParser {
                     body: statement,
                 })
             } else {
-
-                let error = format!(
-                    "Expected }} but found {:?}",
-                    self.current_token.clone()
-                ); 
-                self.errors.push(error.clone()); 
+                let error = format!("Expected }} but found {:?}", self.current_token.clone());
+                self.errors.push(error.clone());
                 Err(error)
             }
         } else {
-            let error =format!("Expected int but found {:?}", self.current_token);  
-            self.errors.push(error.clone()); 
+            let error = format!("Expected int but found {:?}", self.current_token);
+            self.errors.push(error.clone());
             Err(error)
         }
     }

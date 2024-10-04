@@ -1,4 +1,7 @@
-use std::{env::{self, consts::OS}, fmt::Debug, os};
+use std::{
+    env::{self, consts::OS},
+    fmt::Debug,
+};
 
 use crate::ast::Identifier;
 
@@ -8,7 +11,10 @@ pub struct AssemblyProgram(pub AssemblyFunction);
 impl AssemblyProgram {
     pub fn format(&self) -> String {
         if env::consts::OS == "linux" {
-            format!("{}\n\t.section .note.GNU-stack,'',@progbits", self.0.format())
+            format!(
+                "{}\n\t.section .note.GNU-stack,'',@progbits",
+                self.0.format()
+            )
         } else {
             self.0.format()
         }
@@ -30,14 +36,16 @@ pub struct AssemblyFunction {
 
 impl AssemblyFunction {
     pub fn format(&self) -> String {
-        let mut result = format!("\t.globl {}\n{}:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n", self.name.0, self.name.0); 
+        let mut result = format!(
+            "\t.globl {}\n{}:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n",
+            self.name.0, self.name.0
+        );
 
         for instruction in &self.instructions {
-            result.push_str(&format!("\t{}\n",instruction.format())); 
+            result.push_str(&format!("\t{}\n", instruction.format()));
         }
 
         result
-
     }
 }
 
@@ -62,8 +70,12 @@ pub enum AssemblyInstruction {
 impl AssemblyInstruction {
     pub fn format(&self) -> String {
         match self {
-            AssemblyInstruction::Mov { src, dst } => format!("movl\t{}, {}", src.format(), dst.format()),
-            AssemblyInstruction::Unary(operator, operand) => format!("{}\t{}", operator.format(), operand.format()),
+            AssemblyInstruction::Mov { src, dst } => {
+                format!("movl\t{}, {}", src.format(), dst.format())
+            }
+            AssemblyInstruction::Unary(operator, operand) => {
+                format!("{}\t{}", operator.format(), operand.format())
+            }
             AssemblyInstruction::AllocateStack(i) => format!("subq\t${}, %rsp", i),
             AssemblyInstruction::Ret => format!("movq\t%rbp, %rsp\n\tpopq\t%rbp\n\tret"),
         }
@@ -112,9 +124,9 @@ impl Operand {
     fn format(&self) -> String {
         match self {
             Operand::Imm(i) => format!("${}", i),
-            Operand::Register(r) => r.format(),  
-            // Pseudo registers must be removed at this point. 
-            Operand::Pseudo(p) => todo!(), 
+            Operand::Register(r) => r.format(),
+            // TODO: Pseudo registers must be removed at this point.
+            Operand::Pseudo(p) => todo!(),
             Operand::Stack(s) => format!("{}(%rbp)", s),
         }
     }
