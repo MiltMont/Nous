@@ -1,6 +1,15 @@
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Clone)]
+pub enum BinaryOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Remainder,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum UnaryOperator {
     Complement,
     Negate,
@@ -10,6 +19,7 @@ pub enum UnaryOperator {
 pub enum Expression {
     Constant(i64),
     Unary(UnaryOperator, Box<Expression>),
+    Binary(BinaryOperator, Box<Expression>, Box<Expression>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
