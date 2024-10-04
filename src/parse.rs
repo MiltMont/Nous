@@ -4,7 +4,13 @@ use logos::Lexer;
 
 use crate::{ast, lexer::Token};
 
-/// Turns a stream of Tokens into an AST Program
+/// Turns a stream of Tokens into a Parser object.
+/// ```
+/// let mut lexer = Token::Lexer(&file);
+/// let mut parser : Parser = Parser::build(&mut lexer);
+/// // Creating an ast object
+/// let ast : ast::Program = parser.to_ast_program();
+/// ```
 pub struct Parser {
     /// Queue of tokens
     pub tokens: VecDeque<Token>,
