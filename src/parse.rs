@@ -9,7 +9,7 @@ use crate::{ast, lexer::Token};
 /// let mut lexer = Token::Lexer(&file);
 /// let mut parser : Parser = Parser::build(&mut lexer);
 /// // Creating an ast object
-/// let ast : ast::Program = parser.to_ast_program();
+/// let ast_program : ast::Program = parser.to_ast_program();
 /// ```
 pub struct Parser {
     /// Queue of tokens
