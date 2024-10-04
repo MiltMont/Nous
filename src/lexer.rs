@@ -44,4 +44,21 @@ pub enum Token {
 
     #[token("return")]
     Return,
+
+    // Arithmetic operators
+    /// Addition
+    #[token("+")]
+    Add,
+
+    /// Multiplication
+    #[token("*")]
+    Mul,
+
+    /// Division
+    #[token("/")]
+    Div,
+
+    /// Remainder
+    #[token("%")]
+    Remainder,
 }
