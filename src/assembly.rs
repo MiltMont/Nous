@@ -1,4 +1,8 @@
-use std::{collections::{HashMap, VecDeque}, env, fmt::Debug};
+use std::{
+    collections::{HashMap, VecDeque},
+    env,
+    fmt::Debug,
+};
 
 use crate::{ast, tac};
 
@@ -27,8 +31,8 @@ impl Debug for Program {
 
 #[derive(Clone)]
 pub struct Function {
-    pub name: ast::Identifier, 
-    pub instructions: Vec<Instruction>, 
+    pub name: ast::Identifier,
+    pub instructions: Vec<Instruction>,
 }
 
 impl Function {
@@ -58,9 +62,9 @@ impl Debug for Function {
 
 #[derive(Clone)]
 pub enum Instruction {
-    Mov {src: Operand, dst: Operand}, 
-    Unary(UnaryOperator, Operand), 
-    AllocateStack(i64), 
+    Mov { src: Operand, dst: Operand },
+    Unary(UnaryOperator, Operand),
+    AllocateStack(i64),
     Ret,
 }
 
@@ -74,7 +78,7 @@ impl Instruction {
                 format!("{}\t{}", operator.format(), operand.format())
             }
             Instruction::AllocateStack(i) => format!("subq\t${}, %rsp", i),
-            Instruction::Ret => format!("movq\t%rbp, %rsp\n\tpopq\t%rbp\n\tret"),
+            Instruction::Ret => "movq\t%rbp, %rsp\n\tpopq\t%rbp\n\tret".to_string(),
         }
     }
 }
@@ -96,8 +100,8 @@ impl Debug for Instruction {
 
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
-    Neg, 
-    Not
+    Neg,
+    Not,
 }
 
 impl UnaryOperator {
@@ -111,10 +115,10 @@ impl UnaryOperator {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Operand {
-    Imm(i64), 
-    Register(Reg), 
-    Pseudo(ast::Identifier), 
-    Stack(i64)
+    Imm(i64),
+    Register(Reg),
+    Pseudo(ast::Identifier),
+    Stack(i64),
 }
 
 impl Operand {
@@ -131,78 +135,77 @@ impl Operand {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Reg {
-    AX, 
-    R10
-} 
+    AX,
+    R10,
+}
 
 impl Reg {
     pub fn format(&self) -> String {
         match self {
-            Reg::AX => format!("%eax"),
-            Reg::R10 => format!("%r10d"),
+            Reg::AX => "%eax".to_string(),
+            Reg::R10 => "%r10d".to_string(),
         }
     }
 }
 
-/// Assembly program representation. 
+/// Assembly program representation.
 ///
-/// It is indended to be used as follows: 
+/// It is indended to be used as follows:
 ///
 /// ```
-/// let mut lexer = Token::lexer(&file); 
-/// let mut parser: Parser = Parser::build(&mut lexer); 
-/// let mut tac: TAC = TAC::build(parser.to_ast_program()); 
-/// let mut assembly: Assembly = Assembly::new(tac.to_tac_program()); 
+/// let mut lexer = Token::lexer(&file);
+/// let mut parser: Parser = Parser::build(&mut lexer);
+/// let mut tac: TAC = TAC::build(parser.to_ast_program());
+/// let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
 /// ```
 ///
-/// You can obtain an assembly program representation 
+/// You can obtain an assembly program representation
 /// by calling `.to_assembly_program()`
 ///
 /// ```
-/// let mut assembly_program: assembly::Program = assembly.to_assembly_program(); 
+/// let mut assembly_program: assembly::Program = assembly.to_assembly_program();
 /// ```
 ///
 pub struct Assembly {
     // TODO: Should this be plubic?
-    pub source: tac::Program, 
-    pub program: Option<Program>, 
-    pub pseudo_registers: HashMap<Operand, i64>, 
-    offset: i64, 
-} 
+    source: tac::Program,
+    program: Option<Program>,
+    pseudo_registers: HashMap<Operand, i64>,
+    offset: i64,
+}
 
 impl Assembly {
     /// Creates an Assembly object.
     pub fn new(tac_program: tac::Program) -> Self {
         Self {
-            source: tac_program, 
-            program: None, 
-            pseudo_registers: HashMap::new(), 
-            offset: 0
+            source: tac_program,
+            program: None,
+            pseudo_registers: HashMap::new(),
+            offset: 0,
         }
     }
-    
+
+    /// Converts an Assembly object into an Assembly Program object.
     pub fn to_assembly_program(&mut self) -> Program {
         // Parsing the program
         self.parse_program();
-        
+
         //
-        // Program post-processing. 
+        // Program post-processing.
         //
         self.program = self
             .replace_pseudo_registers()
             .rewrite_mov()
-            .allocate_stack(); 
+            .allocate_stack();
 
         self.program.clone().expect("Returning program")
     }
 
     fn parse_program(&mut self) -> Program {
-        self.program = Some(Program(
-                self.parse_function(self.source.0.clone()), 
-        ));
+        self.program = Some(Program(self.parse_function(self.source.0.clone())));
 
         self.program.clone().expect("Returning program")
-    } 
+    }
 
     fn parse_function(&mut self, function: tac::Function) -> Function {
         let mut instructions = Vec::new();
@@ -213,24 +216,29 @@ impl Assembly {
         }
 
         Function {
-            name: function.identifier, 
-            instructions
+            name: function.identifier,
+            instructions,
         }
     }
 
-
-    fn parse_instruction(&mut self, instruction: tac::Instruction) -> Vec<Instruction>  {
+    fn parse_instruction(&mut self, instruction: tac::Instruction) -> Vec<Instruction> {
         match instruction {
             tac::Instruction::Return(val) => {
                 vec![
-                    Instruction::Mov { src: self.parse_operand(val), dst: Operand::Register(Reg::AX) }, 
-                    Instruction::Ret
+                    Instruction::Mov {
+                        src: self.parse_operand(val),
+                        dst: Operand::Register(Reg::AX),
+                    },
+                    Instruction::Ret,
                 ]
             }
             tac::Instruction::Unary { operator, src, dst } => {
                 vec![
-                    Instruction::Mov { src: self.parse_operand(src), dst: self.parse_operand(dst.clone()) }, 
-                    Instruction::Unary(self.parse_operator(operator), self.parse_operand(dst))
+                    Instruction::Mov {
+                        src: self.parse_operand(src),
+                        dst: self.parse_operand(dst.clone()),
+                    },
+                    Instruction::Unary(self.parse_operator(operator), self.parse_operand(dst)),
                 ]
             }
         }
@@ -238,22 +246,22 @@ impl Assembly {
 
     fn parse_operator(&self, operator: ast::UnaryOperator) -> UnaryOperator {
         match operator {
-            ast::UnaryOperator::Negate => UnaryOperator::Neg, 
-            ast::UnaryOperator::Complement => UnaryOperator::Not
+            ast::UnaryOperator::Negate => UnaryOperator::Neg,
+            ast::UnaryOperator::Complement => UnaryOperator::Not,
         }
-    }    
+    }
 
     fn parse_operand(&mut self, operand: tac::Val) -> Operand {
         match operand {
-            tac::Val::Constant(i) => Operand::Imm(i), 
+            tac::Val::Constant(i) => Operand::Imm(i),
             tac::Val::Var(id) => {
-                // Update the offset whenever we encounter a new identifier. 
+                // Update the offset whenever we encounter a new identifier.
                 if !self
                     .pseudo_registers
-                    .contains_key(&Operand::Pseudo(id.clone())) {
-                        self.offset += 4;
+                    .contains_key(&Operand::Pseudo(id.clone()))
+                {
+                    self.offset += 4;
                 }
-
 
                 self.pseudo_registers
                     .insert(Operand::Pseudo(id.clone()), self.offset);
@@ -265,7 +273,12 @@ impl Assembly {
     /// Obtain the stack value of the operand
     fn obtain_stack_value(&self, operand: Operand) -> Operand {
         if self.pseudo_registers.contains_key(&operand) {
-            Operand::Stack(*self.pseudo_registers.get(&operand).expect("Getting operand stack value"))
+            Operand::Stack(
+                *self
+                    .pseudo_registers
+                    .get(&operand)
+                    .expect("Getting operand stack value"),
+            )
         } else {
             // TODO: Is this necessary?
             operand
@@ -276,89 +289,100 @@ impl Assembly {
     /// stack values
     fn convert_register(&mut self, instruction: Instruction) -> Instruction {
         match instruction {
-            Instruction::Mov { src, dst } => Instruction::Mov { src: self.obtain_stack_value(src), dst: self.obtain_stack_value(dst) }, 
-            Instruction::Unary(s,d) => Instruction::Unary(s, self.obtain_stack_value(d)), 
-            Instruction::AllocateStack(i) => Instruction::AllocateStack(i), 
-            Instruction::Ret => Instruction::Ret, 
+            Instruction::Mov { src, dst } => Instruction::Mov {
+                src: self.obtain_stack_value(src),
+                dst: self.obtain_stack_value(dst),
+            },
+            Instruction::Unary(s, d) => Instruction::Unary(s, self.obtain_stack_value(d)),
+            Instruction::AllocateStack(i) => Instruction::AllocateStack(i),
+            Instruction::Ret => Instruction::Ret,
         }
     }
-    
+
     /// If `self.program` exists then this method modifies
-    /// the array of instructions on `self.program.0.instructions` 
-    /// to replace pseudo registers with their corresponding stack 
+    /// the array of instructions on `self.program.0.instructions`
+    /// to replace pseudo registers with their corresponding stack
     /// values
     pub fn replace_pseudo_registers(&mut self) -> &mut Self {
-        let temp: Vec<Instruction> = 
-            self.program
+        let temp: Vec<Instruction> = self
+            .program
             .as_mut()
             .expect("Cloning program instructions")
             .0
             .instructions
             .clone();
 
-        let new_instructions: Vec<Instruction> = temp 
-            .into_iter()
-            .map(|x| self.convert_register(x))
-            .collect();
+        let new_instructions: Vec<Instruction> =
+            temp.into_iter().map(|x| self.convert_register(x)).collect();
 
         // Update instructions
-        self.program.as_mut().expect("Updating instructions").0.instructions = new_instructions;
+        self.program
+            .as_mut()
+            .expect("Updating instructions")
+            .0
+            .instructions = new_instructions;
 
         self
     }
 
-
     /// Add an `Instruction::AllocateStack(self.offset)` instruction
     /// on the head of the instruction stack.
-    pub fn allocate_stack(&mut self) ->  Option<Program> {
+    pub fn allocate_stack(&mut self) -> Option<Program> {
         if let Some(program) = &self.program {
-            let mut instructions : VecDeque<Instruction> = VecDeque::from(program.0.instructions.clone());
+            let mut instructions: VecDeque<Instruction> =
+                VecDeque::from(program.0.instructions.clone());
             let stack = Instruction::AllocateStack(self.offset);
 
             instructions.push_front(stack);
 
-            Some(
-                Program(
-                    Function {
-                        name: program.0.name.clone(), 
-                        instructions: Vec::from(instructions)
-                    }
-                )
-            )
+            Some(Program(Function {
+                name: program.0.name.clone(),
+                instructions: Vec::from(instructions),
+            }))
         } else {
             None
         }
     }
 
-
     /// Rewrites the `Instruction::Mov` instructions in the instruction
-    /// stream whenever both source and destination are both 
+    /// stream whenever both source and destination are both
     /// Stack operands.
     pub fn rewrite_mov(&mut self) -> &mut Self {
-        let temp_instructions: Vec<Instruction> =
-            self.program.as_mut().expect("Cloning instructions").0.instructions.clone();
+        let temp_instructions: Vec<Instruction> = self
+            .program
+            .as_mut()
+            .expect("Cloning instructions")
+            .0
+            .instructions
+            .clone();
         let mut new_instructions = Vec::new();
 
         for instruction in temp_instructions {
             match &instruction {
                 Instruction::Mov { src, dst } => {
                     if matches!(src, Operand::Stack(_)) && matches!(dst, Operand::Stack(_)) {
-                        new_instructions.push(
-                           Instruction::Mov { src: src.clone(), dst: Operand::Register(Reg::R10) }
-                        );
-                        new_instructions.push(
-                            Instruction::Mov { src: Operand::Register(Reg::R10), dst: dst.clone() }
-                        );
+                        new_instructions.push(Instruction::Mov {
+                            src: src.clone(),
+                            dst: Operand::Register(Reg::R10),
+                        });
+                        new_instructions.push(Instruction::Mov {
+                            src: Operand::Register(Reg::R10),
+                            dst: dst.clone(),
+                        });
                     } else {
-                        new_instructions.push(instruction.clone()); 
+                        new_instructions.push(instruction.clone());
                     }
                 }
-                _ => new_instructions.push(instruction), 
+                _ => new_instructions.push(instruction),
             }
         }
 
-        self.program.as_mut().expect("Modifying instruction stack").0.instructions = new_instructions;
+        self.program
+            .as_mut()
+            .expect("Modifying instruction stack")
+            .0
+            .instructions = new_instructions;
 
         self
-    } 
+    }
 }

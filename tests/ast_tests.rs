@@ -4,7 +4,7 @@ pub mod tests {
     use nous::{
         ast::{Expression, Function, Identifier, Program, Statement},
         lexer::Token,
-        parser::CParser,
+        parser::Parser,
         utils::read_file,
     };
 
@@ -13,18 +13,16 @@ pub mod tests {
         let source = read_file("tests/files/valid/return_2.c")?;
 
         let mut lexer = Token::lexer(&source);
-        let mut parser = CParser::build(&mut lexer);
+        let mut parser = Parser::build(&mut lexer);
 
         let test = Program(Function {
             name: Identifier("main".to_owned()),
             body: Statement::Return(Expression::Constant(2)),
         });
 
-        if let Ok(p) = parser.parse_program() {
-            assert_eq!(p, test);
-        } else {
-            panic!("{:?}", parser.errors);
-        }
+        let program = parser.to_ast_program();
+
+        assert_eq!(program, test);
 
         Ok(())
     }

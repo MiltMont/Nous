@@ -1,13 +1,13 @@
-use clap::Parser as ClapParser;
-use logos::Logos;
-use std::fs::{self, File};
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::io::prelude::*;
 use crate::assembly::Assembly;
 use crate::lexer::Token;
 use crate::parser::Parser;
 use crate::tac::TAC;
+use clap::Parser as ClapParser;
+use logos::Logos;
+use std::fs::{self, File};
+use std::io::prelude::*;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 #[derive(ClapParser, Debug, Clone)]
 #[command(version, about, long_about = None)]
@@ -38,7 +38,7 @@ pub struct CompilerDriver {
     tac: bool,
 
     #[arg(long)]
-    emitcode: bool, 
+    emitcode: bool,
 }
 
 impl CompilerDriver {
@@ -95,31 +95,30 @@ impl CompilerDriver {
             let path = preproc_file.clone().into_os_string().into_string().unwrap();
             let file = fs::read_to_string(path).expect("Unable to read file");
             let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer); 
-            let mut tac = TAC::build(parser.to_ast_program()); 
-            let mut assembly = Assembly::new(tac.to_tac_program()); 
+            let mut parser = Parser::build(&mut lexer);
+            let mut tac = TAC::build(parser.to_ast_program());
+            let mut assembly = Assembly::new(tac.to_tac_program());
 
             let output_path = output_assembler
                 .clone()
                 .into_os_string()
                 .into_string()
                 .unwrap();
-            println!("Writing: "); 
+            println!("Writing: ");
 
-            let path = Path::new(&output_path); 
-            let display = path.display(); 
+            let path = Path::new(&output_path);
+            let display = path.display();
 
             // Open a file in write-only mode, returns `io::Result<File>`
-            let mut file = match File::create(&path) {
-                    Err(why) => panic!("couldn't create {}: {}", display, why),
-                    Ok(file) => file,
+            let mut file = match File::create(path) {
+                Err(why) => panic!("couldn't create {}: {}", display, why),
+                Ok(file) => file,
             };
 
             match file.write_all(assembly.to_assembly_program().format().as_bytes()) {
                 Err(why) => panic!("couldn't write to {}: {}", display, why),
                 Ok(_) => println!("successfully wrote to {}", display),
             }
-
 
             // Deleting the preprocessed file
             Command::new("rm")
@@ -172,7 +171,7 @@ impl CompilerDriver {
             ))
         }
     }
-    
+
     /// Outputs the token stream.
     fn lex_file(&self) -> Result<(), String> {
         if self.file.exists() {
@@ -193,8 +192,8 @@ impl CompilerDriver {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
             let mut lexer = Token::lexer(&file);
             let mut parser = Parser::build(&mut lexer);
-            
-            println!("{:?}", parser.to_ast_program()); 
+
+            println!("{:?}", parser.to_ast_program());
 
             Ok(())
         } else {
@@ -208,16 +207,16 @@ impl CompilerDriver {
             let mut lexer = Token::lexer(&file);
             let mut parser = Parser::build(&mut lexer);
             let mut tac = TAC::build(parser.to_ast_program());
-            let mut assembly = Assembly::new(tac.to_tac_program()); 
-            
-            println!("{:?}", assembly.to_assembly_program()); 
+            let mut assembly = Assembly::new(tac.to_tac_program());
+
+            println!("{:?}", assembly.to_assembly_program());
             Ok(())
             //if let Ok(program) = parser.parse_program() {
             //    let tac = TacGenerator::build(program).parse_program();
             //    let mut assembly = AssemblyParser::new(tac);
             //    let assembly_program = assembly.convert_program();
             //
-            //    let with_stack = 
+            //    let with_stack =
             //        assembly.replace_pseudo_reg()
             //        .rewrite_mov()
             //        .allocate_stack();
@@ -233,7 +232,7 @@ impl CompilerDriver {
             Err("Failed parsing file, no such file".to_string())
         }
     }
-    
+
     /// Output the three adress code intermediate representation.
     fn tac_gen(&self) -> Result<(), String> {
         if self.file.exists() {
@@ -241,10 +240,10 @@ impl CompilerDriver {
 
             let mut lexer = Token::lexer(&file);
             let mut parser = Parser::build(&mut lexer);
-            let mut tac = TAC::build(parser.to_ast_program()); 
-            println!("{:?}", tac.to_tac_program()); 
+            let mut tac = TAC::build(parser.to_ast_program());
+            println!("{:?}", tac.to_tac_program());
 
-            Ok(()) 
+            Ok(())
         } else {
             Err("Failed finding file, no such file".to_string())
         }
@@ -265,7 +264,7 @@ impl CompilerDriver {
     //                .rewrite_mov()
     //                .allocate_stack();
     //
-    //            let result = test.unwrap().format(); 
+    //            let result = test.unwrap().format();
     //            println!("{}", result);
     //
     //            Ok(())
@@ -280,13 +279,13 @@ impl CompilerDriver {
     /// Emmits final assembly code
     fn emit_code(&self) -> Result<(), String> {
         if self.file.exists() {
-            let file = fs::read_to_string(&self.file).expect("Reading file"); 
-            let mut lexer = Token::lexer(&file); 
-            let mut parser = Parser::build(&mut lexer); 
-            let mut tac = TAC::build(parser.to_ast_program()); 
-            let mut assembly = Assembly::new(tac.to_tac_program()); 
-            
-            println!("{}", assembly.to_assembly_program().format()); 
+            let file = fs::read_to_string(&self.file).expect("Reading file");
+            let mut lexer = Token::lexer(&file);
+            let mut parser = Parser::build(&mut lexer);
+            let mut tac = TAC::build(parser.to_ast_program());
+            let mut assembly = Assembly::new(tac.to_tac_program());
+
+            println!("{}", assembly.to_assembly_program().format());
 
             Ok(())
         } else {
@@ -316,7 +315,7 @@ impl CompilerDriver {
 
         if self.emitcode {
             self.emit_code()?;
-            return Ok(())
+            return Ok(());
         }
 
         self.preprocess_file()?;
