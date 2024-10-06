@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use crate::ast;
 
 /// A three address code program representation.
+#[derive(Debug)]
 pub struct Program(pub Function);
 
 #[derive(Clone)]
