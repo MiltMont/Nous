@@ -1,10 +1,7 @@
 pub mod assembly;
-pub mod assembly_parser;
 pub mod ast;
 pub mod compiler_driver;
 pub mod lexer;
-pub mod parse;
 pub mod parser;
 pub mod tac;
-pub mod tacc;
 pub mod utils;

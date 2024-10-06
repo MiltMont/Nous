@@ -1,23 +1,17 @@
 use std::fmt::Debug;
 
-use crate::ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator};
+use crate::ast;
+
+/// A three address code program representation.
+pub struct Program(pub Function);
 
 #[derive(Clone)]
-pub struct TacProgram(pub TacFunction);
-
-impl Debug for TacProgram {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "TacProgram(\n{:?}\n)", &self.0)
-    }
-}
-
-#[derive(Clone)]
-pub struct TacFunction {
-    pub identifier: Identifier,
+pub struct Function {
+    pub identifier: ast::Identifier,
     pub body: Vec<Instruction>,
 }
 
-impl Debug for TacFunction {
+impl Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -31,7 +25,7 @@ impl Debug for TacFunction {
 pub enum Instruction {
     Return(Val),
     Unary {
-        operator: UnaryOperator,
+        operator: ast::UnaryOperator,
         src: Val,
         dst: Val,
     },
@@ -51,18 +45,28 @@ impl Debug for Instruction {
 #[derive(Debug, Clone)]
 pub enum Val {
     Constant(i64),
-    Var(Identifier),
+    Var(ast::Identifier),
 }
 
+/// Constructs TAC intermediate representation from an ast
+///
+/// ```
+/// let mut lexer = Token::Lexer(&file);
+/// let mut parser : Parser = Parser::build(&mut lexer);
+/// let mut tac: TAC = TAC::build(parser.to_ast_program());
+///
+/// // Creating a tac program
+/// let tac_program tac.to_tac_program();
+/// ```
 #[derive(Debug, Clone)]
-pub struct TacGenerator {
-    source: Program,
+pub struct TAC {
+    source: ast::Program,
     temp_count: usize,
     instructions: Vec<Instruction>,
 }
 
-impl TacGenerator {
-    pub fn build(source: Program) -> Self {
+impl TAC {
+    pub fn build(source: ast::Program) -> Self {
         Self {
             source,
             temp_count: 0,
@@ -70,29 +74,31 @@ impl TacGenerator {
         }
     }
 
-    pub fn parse_program(&mut self) -> TacProgram {
-        let function = self.parse_function(self.source.0.clone());
-
-        TacProgram(function)
+    pub fn to_tac_program(&mut self) -> Program {
+        self.parse_program()
     }
 
-    fn parse_function(&mut self, function: Function) -> TacFunction {
-        // Remove instructions resulting from previous use
-        // of parse_statement.
+    fn parse_program(&mut self) -> Program {
+        let function = self.parse_function(self.source.0.clone());
+
+        Program(function)
+    }
+
+    fn parse_function(&mut self, function: ast::Function) -> Function {
         self.instructions = Vec::new();
         let ret = self.parse_statement(function.body);
 
         self.instructions.push(ret);
 
-        TacFunction {
+        Function {
             identifier: function.name,
             body: self.instructions.clone(),
         }
     }
 
-    fn parse_statement(&mut self, statement: Statement) -> Instruction {
+    fn parse_statement(&mut self, statement: ast::Statement) -> Instruction {
         match statement {
-            Statement::Return(expression) => {
+            ast::Statement::Return(expression) => {
                 let val = self.parse_val(expression);
 
                 Instruction::Return(val)
@@ -100,13 +106,13 @@ impl TacGenerator {
         }
     }
 
-    fn parse_val(&mut self, expression: Expression) -> Val {
+    fn parse_val(&mut self, expression: ast::Expression) -> Val {
         match expression {
-            Expression::Constant(i) => Val::Constant(i),
-            Expression::Unary(op, inner) => {
+            ast::Expression::Constant(i) => Val::Constant(i),
+            ast::Expression::Unary(op, inner) => {
                 let src = self.parse_val(*inner);
                 let dst_name = self.make_temporary_name();
-                let dst = Val::Var(Identifier(dst_name));
+                let dst = Val::Var(ast::Identifier(dst_name));
                 self.instructions.push(Instruction::Unary {
                     operator: op,
                     src,
@@ -114,9 +120,7 @@ impl TacGenerator {
                 });
                 dst
             }
-            Expression::Binary(_, _, _) => {
-                todo!()
-            }
+            ast::Expression::Binary(_, _, _) => todo!(),
         }
     }
 

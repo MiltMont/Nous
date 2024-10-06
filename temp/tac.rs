@@ -1,16 +1,23 @@
 use std::fmt::Debug;
 
-use crate::ast;
-
-pub struct Program(pub Function);
+use crate::ast::{Expression, Function, Identifier, Program, Statement, UnaryOperator};
 
 #[derive(Clone)]
-pub struct Function {
-    pub identifier: ast::Identifier,
+pub struct TacProgram(pub TacFunction);
+
+impl Debug for TacProgram {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TacProgram(\n{:?}\n)", &self.0)
+    }
+}
+
+#[derive(Clone)]
+pub struct TacFunction {
+    pub identifier: Identifier,
     pub body: Vec<Instruction>,
 }
 
-impl Debug for Function {
+impl Debug for TacFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -24,7 +31,7 @@ impl Debug for Function {
 pub enum Instruction {
     Return(Val),
     Unary {
-        operator: ast::UnaryOperator,
+        operator: UnaryOperator,
         src: Val,
         dst: Val,
     },
@@ -44,28 +51,18 @@ impl Debug for Instruction {
 #[derive(Debug, Clone)]
 pub enum Val {
     Constant(i64),
-    Var(ast::Identifier),
+    Var(Identifier),
 }
 
-/// Constructs TAC intermediate representation from an ast
-///
-/// ```
-/// let mut lexer = Token::Lexer(&file);
-/// let mut parser : Parser = Parser::build(&mut lexer);
-/// let mut tac: TAC = TAC::build(parser.to_ast_program());
-///
-/// // Creating a tac program
-/// let tac_program tac.to_tac_program();
-/// ```
 #[derive(Debug, Clone)]
-pub struct TAC {
-    source: ast::Program,
+pub struct TacGenerator {
+    source: Program,
     temp_count: usize,
     instructions: Vec<Instruction>,
 }
 
-impl TAC {
-    pub fn build(source: ast::Program) -> Self {
+impl TacGenerator {
+    pub fn build(source: Program) -> Self {
         Self {
             source,
             temp_count: 0,
@@ -73,31 +70,29 @@ impl TAC {
         }
     }
 
-    pub fn to_tac_program(&mut self) -> Program {
-        self.parse_program()
-    }
-
-    fn parse_program(&mut self) -> Program {
+    pub fn parse_program(&mut self) -> TacProgram {
         let function = self.parse_function(self.source.0.clone());
 
-        Program(function)
+        TacProgram(function)
     }
 
-    fn parse_function(&mut self, function: ast::Function) -> Function {
+    fn parse_function(&mut self, function: Function) -> TacFunction {
+        // Remove instructions resulting from previous use
+        // of parse_statement.
         self.instructions = Vec::new();
         let ret = self.parse_statement(function.body);
 
         self.instructions.push(ret);
 
-        Function {
+        TacFunction {
             identifier: function.name,
             body: self.instructions.clone(),
         }
     }
 
-    fn parse_statement(&mut self, statement: ast::Statement) -> Instruction {
+    fn parse_statement(&mut self, statement: Statement) -> Instruction {
         match statement {
-            ast::Statement::Return(expression) => {
+            Statement::Return(expression) => {
                 let val = self.parse_val(expression);
 
                 Instruction::Return(val)
@@ -105,13 +100,13 @@ impl TAC {
         }
     }
 
-    fn parse_val(&mut self, expression: ast::Expression) -> Val {
+    fn parse_val(&mut self, expression: Expression) -> Val {
         match expression {
-            ast::Expression::Constant(i) => Val::Constant(i),
-            ast::Expression::Unary(op, inner) => {
+            Expression::Constant(i) => Val::Constant(i),
+            Expression::Unary(op, inner) => {
                 let src = self.parse_val(*inner);
                 let dst_name = self.make_temporary_name();
-                let dst = Val::Var(ast::Identifier(dst_name));
+                let dst = Val::Var(Identifier(dst_name));
                 self.instructions.push(Instruction::Unary {
                     operator: op,
                     src,
@@ -119,7 +114,9 @@ impl TAC {
                 });
                 dst
             }
-            ast::Expression::Binary(_, _, _) => todo!(),
+            Expression::Binary(_, _, _) => {
+                todo!()
+            }
         }
     }
 
