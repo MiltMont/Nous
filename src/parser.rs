@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use logos::Lexer;
 
@@ -11,16 +11,19 @@ use crate::{ast, lexer::Token};
 /// // Creating an ast object
 /// let ast_program : ast::Program = parser.to_ast_program();
 /// ```
-pub struct Parser {
+pub struct Parser<'a> {
     /// Queue of tokens
-    pub tokens: VecDeque<Token>,
+    tokens: VecDeque<Token>,
     /// Current token in token stream
-    pub current_token: Token,
+    current_token: Token,
     /// Next token in token stream
-    pub peek_token: Token,
+    peek_token: Token,
+
+    /// Map of operator precedences
+    precedences: HashMap<&'a Token, i64>,
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     /// Returns a Parser given a Lexer.
     pub fn build(lexer: &mut Lexer<Token>) -> Self {
         let mut tokens: VecDeque<Token> =
@@ -29,10 +32,20 @@ impl Parser {
         let current_token = tokens.pop_front().unwrap();
         let peek_token = tokens.pop_front().unwrap();
 
+        let mut precedences = HashMap::new();
+
+        // Defining the precedence values.
+        precedences.insert(&Token::Mul, 50);
+        precedences.insert(&Token::Div, 50);
+        precedences.insert(&Token::Remainder, 50);
+        precedences.insert(&Token::Add, 45);
+        precedences.insert(&Token::Negation, 45);
+
         Self {
             tokens,
             current_token,
             peek_token,
+            precedences,
         }
     }
 
@@ -217,6 +230,15 @@ impl Parser {
                 "Expected RETURN but found {:?}",
                 self.current_token
             ))
+        }
+    }
+
+    /// Returns the precedence of a given operator.
+    fn get_precedence(&self, binary_operator: &Token) -> Result<i64, String> {
+        if let Some(i) = self.precedences.get(binary_operator) {
+            Ok(*i)
+        } else {
+            Err(String::from("Token not present in precedences table"))
         }
     }
 }

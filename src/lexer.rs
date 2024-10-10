@@ -1,6 +1,6 @@
 use logos::Logos;
 
-#[derive(Logos, Debug, PartialEq, Clone)]
+#[derive(Hash, Eq, Logos, Debug, PartialEq, Clone)]
 // TODO: Skip block comments #[logos(skip r"\/*(?:[^*]|\*[^/])*\*\/")]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
