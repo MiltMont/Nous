@@ -167,7 +167,6 @@ impl Reg {
 /// ```
 ///
 pub struct Assembly {
-    // TODO: Should this be plubic?
     source: tac::Program,
     program: Option<Program>,
     pseudo_registers: HashMap<Operand, i64>,
@@ -298,6 +297,8 @@ impl Assembly {
             Instruction::Ret => Instruction::Ret,
         }
     }
+
+    // TODO: Modify these functions to be private
 
     /// If `self.program` exists then this method modifies
     /// the array of instructions on `self.program.0.instructions`

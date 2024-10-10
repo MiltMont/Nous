@@ -55,13 +55,21 @@ impl Parser {
         self.current_token == *token
     }
 
+    fn next_token_is(&self, token: &Token) -> bool {
+        self.peek_token == *token
+    }
+
     /// Returns an AST Program or an Error string.
+    ///
+    /// <program> ::== <function>
     fn parse_program(&mut self) -> Result<ast::Program, String> {
         let function = self.parse_function()?;
         Ok(ast::Program(function))
     }
 
     /// Returns an ast::Function or an Error String.
+    ///
+    /// <function> ::== "int" <identifier> "(" "void" ")" "{" <statement> "}"
     fn parse_function(&mut self) -> Result<ast::Function, String> {
         if self.current_token_is(&Token::Int) {
             self.next_token();
@@ -97,7 +105,40 @@ impl Parser {
         }
     }
 
+    fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator, String> {
+        match self.current_token {
+            Token::Negation => {
+                // HACK: Should this be done?
+                self.next_token();
+
+                Ok(ast::UnaryOperator::Negate)
+            }
+            Token::BitComp => {
+                self.next_token();
+
+                Ok(ast::UnaryOperator::Complement)
+            }
+            _ => Err(String::from("Not a unary operator")),
+        }
+    }
+
+    fn parse_binaryop(&mut self) -> Result<ast::BinaryOperator, String> {
+        match self.current_token {
+            Token::Add => Ok(ast::BinaryOperator::Add),
+            Token::Negation => Ok(ast::BinaryOperator::Subtract),
+            Token::Mul => Ok(ast::BinaryOperator::Multiply),
+            Token::Div => Ok(ast::BinaryOperator::Divide),
+            Token::Remainder => Ok(ast::BinaryOperator::Remainder),
+            _ => Err(format!(
+                "Not a binary operator, found {:?}",
+                self.current_token
+            )),
+        }
+    }
+
     /// Returns an ast::Identifier or an Error String.
+    ///
+    /// <identifier> ::== An identifier token
     fn parse_identifier(&mut self) -> Result<ast::Identifier, String> {
         if let Token::Identifier(s) = self.current_token.clone() {
             self.next_token();
@@ -110,25 +151,33 @@ impl Parser {
         }
     }
 
+    /// Parses the grammar:
+    ///
+    /// <exp> ::== <factor> | <exp> <binop> <exp>
     fn parse_expression(&mut self) -> Result<ast::Expression, String> {
+        let mut left = self.parse_factor().expect("Parsing left factor");
+
+        while self.next_token_is(&Token::Add) || self.next_token_is(&Token::Negation) {
+            self.next_token();
+            let operator = self.parse_binaryop().expect("Parsing binary operator");
+            self.next_token();
+            let right = self.parse_factor().expect("Parsing right factor");
+            left = ast::Expression::Binary(operator, Box::new(left), Box::new(right));
+        }
+
+        Ok(left)
+    }
+
+    /// <factor> ::== <int> | <unop> <factor> | "(" <exp> ")"
+    fn parse_factor(&mut self) -> Result<ast::Expression, String> {
         match self.current_token {
             Token::Constant(i) => Ok(ast::Expression::Constant(i)),
-            Token::Negation => {
-                self.next_token();
-                Ok(ast::Expression::Unary(
-                    ast::UnaryOperator::Negate,
-                    Box::new(
-                        self.parse_expression()
-                            .expect("Parsing negation expression"),
-                    ),
-                ))
-            }
-            Token::BitComp => {
-                self.next_token();
-                Ok(ast::Expression::Unary(
-                    ast::UnaryOperator::Complement,
-                    Box::new(self.parse_expression().expect("Parsing BitComp expression")),
-                ))
+            // If token is "~" or "-"
+            Token::Negation | Token::BitComp => {
+                let operator = self.parse_unaryop().expect("Parsing unary operator");
+                let inner_expression = self.parse_factor().expect("Parsing inner expression");
+
+                Ok(ast::Expression::Unary(operator, Box::new(inner_expression)))
             }
             Token::LParen => {
                 self.next_token();
@@ -137,16 +186,18 @@ impl Parser {
                 if self.current_token_is(&Token::RParen) {
                     inner_expression
                 } else {
-                    Err(String::from("Missing clossing parenthesis"))
+                    Err(String::from(
+                        "Malformed factor, missing closing parenthesis",
+                    ))
                 }
             }
-            _ => Err(format!(
-                "Malformed expression found {:?}",
-                self.current_token
-            )),
+            _ => Err(format!("Malformed factor, found {:?}", self.current_token)),
         }
     }
 
+    /// Parses the following grammar:
+    ///
+    /// <statement> ::== "return" <exp> ";"
     fn parse_statement(&mut self) -> Result<ast::Statement, String> {
         if self.current_token_is(&Token::Return) {
             self.next_token();
