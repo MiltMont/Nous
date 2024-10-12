@@ -73,6 +73,7 @@ impl<'a> Parser<'a> {
         self.current_token == *token
     }
 
+    #[allow(dead_code)]
     fn next_token_is(&self, token: &Token) -> bool {
         self.peek_token == *token
     }
