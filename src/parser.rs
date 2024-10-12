@@ -118,6 +118,8 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Obtains the type of the current
+    /// unary operation
     fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator, String> {
         match self.current_token {
             Token::Negation => {
@@ -135,6 +137,8 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Obtains the variant of the current
+    /// binary operation
     fn parse_binaryop(&mut self) -> Result<ast::BinaryOperator, String> {
         match self.current_token {
             Token::Add => Ok(ast::BinaryOperator::Add),
@@ -240,5 +244,14 @@ impl<'a> Parser<'a> {
         } else {
             Err(String::from("Token not present in precedences table"))
         }
+    }
+
+    /// Returns true if the current token is a
+    /// binary operator
+    fn is_binary_operator(&self, token: &Token) -> bool {
+        matches!(
+            token,
+            Token::Add | Token::Mul | Token::Div | Token::Negation
+        )
     }
 }
