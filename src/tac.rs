@@ -16,7 +16,7 @@ impl Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\tFunction(\n\tIdentifier: {:?} \n\tBody: {:?}\n\t)",
+            "\n\tFunction(\n\tIdentifier: {:?} \n\tBody: {:?}\n\t)",
             &self.identifier, &self.body
         )
     }
@@ -30,6 +30,12 @@ pub enum Instruction {
         src: Val,
         dst: Val,
     },
+    Binary {
+        binary_operator: ast::BinaryOperator,
+        src_1: Val,
+        src_2: Val,
+        dst: Val,
+    },
 }
 
 impl Debug for Instruction {
@@ -39,6 +45,16 @@ impl Debug for Instruction {
             Self::Unary { operator, src, dst } => {
                 write!(f, "\n\t\tUnary({:?}, {:?}, {:?})", operator, src, dst)
             }
+            Self::Binary {
+                binary_operator,
+                src_1,
+                src_2,
+                dst,
+            } => write!(
+                f,
+                "\n\t\tBinary({:?}, {:?}, {:?}, {:?})",
+                binary_operator, src_1, src_2, dst
+            ),
         }
     }
 }
@@ -121,7 +137,19 @@ impl TAC {
                 });
                 dst
             }
-            ast::Expression::Binary(_, _, _) => todo!(),
+            ast::Expression::Binary(op, e1, e2) => {
+                let v1 = self.parse_val(*e1);
+                let v2 = self.parse_val(*e2);
+                let dst_name = self.make_temporary_name();
+                let dst = Val::Var(ast::Identifier(dst_name));
+                self.instructions.push(Instruction::Binary {
+                    binary_operator: op,
+                    src_1: v1,
+                    src_2: v2,
+                    dst: dst.clone(),
+                });
+                dst
+            }
         }
     }
 

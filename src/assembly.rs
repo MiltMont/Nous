@@ -220,6 +220,7 @@ impl Assembly {
         }
     }
 
+    #[allow(unused_variables)]
     fn parse_instruction(&mut self, instruction: tac::Instruction) -> Vec<Instruction> {
         match instruction {
             tac::Instruction::Return(val) => {
@@ -240,6 +241,12 @@ impl Assembly {
                     Instruction::Unary(self.parse_operator(operator), self.parse_operand(dst)),
                 ]
             }
+            tac::Instruction::Binary {
+                binary_operator,
+                src_1,
+                src_2,
+                dst,
+            } => todo!(),
         }
     }
 
