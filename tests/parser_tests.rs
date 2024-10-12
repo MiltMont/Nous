@@ -1,19 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use logos::Logos;
     use nous::{
         ast::{BinaryOperator, Expression, Program},
-        lexer::Token,
-        parser::Parser,
-        utils::read_file,
+        utils::parser_from_file,
     };
-
-    fn parser_from_file(path: &str) -> Parser<'static> {
-        let contents = read_file(path).unwrap();
-
-        let mut lexer = Token::lexer(&contents);
-        Parser::build(&mut lexer)
-    }
 
     // Testing binary operators
     #[test]

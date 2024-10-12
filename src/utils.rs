@@ -3,6 +3,10 @@ use std::{
     io::{prelude::*, BufReader},
 };
 
+use logos::Logos;
+
+use crate::{lexer::Token, parser::Parser};
+
 pub fn read_file(path: &str) -> std::io::Result<String> {
     let file = File::open(path)?;
     let mut buf_reader = BufReader::new(file);
@@ -10,4 +14,8 @@ pub fn read_file(path: &str) -> std::io::Result<String> {
     buf_reader.read_to_string(&mut contents)?;
 
     Ok(contents)
+}
+
+pub fn parser_from_file(path: &str) -> Parser<'static> {
+    Parser::build(&mut Token::lexer(&read_file(path).unwrap()))
 }
