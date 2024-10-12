@@ -24,6 +24,11 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
+    //
+    // TODO: Document which functions consume the current
+    // token in the token stream.
+    //
+
     /// Returns a Parser given a Lexer.
     pub fn build(lexer: &mut Lexer<Token>) -> Self {
         let mut tokens: VecDeque<Token> =
@@ -123,7 +128,6 @@ impl<'a> Parser<'a> {
     fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator, String> {
         match self.current_token {
             Token::Negation => {
-                // HACK: Should this be done?
                 self.next_token();
 
                 Ok(ast::UnaryOperator::Negate)
@@ -171,15 +175,26 @@ impl<'a> Parser<'a> {
     /// Parses the grammar:
     ///
     /// <exp> ::== <factor> | <exp> <binop> <exp>
-    fn parse_expression(&mut self) -> Result<ast::Expression, String> {
+    fn parse_expression(&mut self, min_precedence: i64) -> Result<ast::Expression, String> {
         let mut left = self.parse_factor().expect("Parsing left factor");
 
-        while self.next_token_is(&Token::Add) || self.next_token_is(&Token::Negation) {
+        let mut next_token = self.peek_token.clone();
+
+        while self.is_binary_operator(&next_token)
+            && self
+                .get_precedence(&next_token)
+                .expect("Getting precedence of peek token")
+                >= min_precedence
+        {
             self.next_token();
             let operator = self.parse_binaryop().expect("Parsing binary operator");
             self.next_token();
-            let right = self.parse_factor().expect("Parsing right factor");
+            let right = self
+                .parse_expression(self.get_precedence(&next_token).unwrap() + 1)
+                .expect("Parsing right expression");
             left = ast::Expression::Binary(operator, Box::new(left), Box::new(right));
+
+            next_token = self.peek_token.clone()
         }
 
         Ok(left)
@@ -198,7 +213,8 @@ impl<'a> Parser<'a> {
             }
             Token::LParen => {
                 self.next_token();
-                let inner_expression = self.parse_expression();
+                let inner_expression =
+                    self.parse_expression(self.get_precedence(&self.peek_token).unwrap());
                 self.next_token();
                 if self.current_token_is(&Token::RParen) {
                     inner_expression
@@ -219,7 +235,7 @@ impl<'a> Parser<'a> {
         if self.current_token_is(&Token::Return) {
             self.next_token();
 
-            let expression = self.parse_expression()?;
+            let expression = self.parse_expression(0)?;
 
             self.next_token();
 
@@ -242,7 +258,10 @@ impl<'a> Parser<'a> {
         if let Some(i) = self.precedences.get(binary_operator) {
             Ok(*i)
         } else {
-            Err(String::from("Token not present in precedences table"))
+            Err(format!(
+                "Token {:?} not present in precedences table",
+                binary_operator
+            ))
         }
     }
 
