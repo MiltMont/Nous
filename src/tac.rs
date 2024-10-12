@@ -22,7 +22,7 @@ impl Debug for Function {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Instruction {
     Return(Val),
     Unary {
@@ -59,7 +59,7 @@ impl Debug for Instruction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Val {
     Constant(i64),
     Var(ast::Identifier),
