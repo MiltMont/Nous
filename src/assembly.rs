@@ -75,6 +75,7 @@ pub enum Instruction {
 }
 
 impl Instruction {
+    #[allow(unused_variables)]
     pub fn format(&self) -> String {
         match self {
             Instruction::Mov { src, dst } => {
@@ -103,13 +104,14 @@ impl Debug for Instruction {
             Self::Unary(arg0, arg1) => f.debug_tuple("\n\tUnary").field(arg0).field(arg1).finish(),
             Self::AllocateStack(arg0) => f.debug_tuple("\n\tAllocateStack").field(arg0).finish(),
             Self::Ret => write!(f, "\n\tRet\n\t\t"),
-            Instruction::Mov { src, dst } => todo!(),
-            Instruction::Unary(unary_operator, operand) => todo!(),
-            Instruction::Binary(binary_operator, operand, operand1) => todo!(),
-            Instruction::Idiv(operand) => todo!(),
-            Instruction::Cdq => todo!(),
-            Instruction::AllocateStack(_) => todo!(),
-            Instruction::Ret => todo!(),
+            Self::Idiv(operand) => f.debug_tuple("Idiv").field(operand).finish(),
+            Self::Cdq => write!(f, "\n\tCdq\n\t\t"),
+            Self::Binary(operator, src, dst) => f
+                .debug_tuple("\n\tBinary")
+                .field(operator)
+                .field(src)
+                .field(dst)
+                .finish(),
         }
     }
 }
@@ -383,9 +385,13 @@ impl Assembly {
             Instruction::Unary(s, d) => Instruction::Unary(s, self.obtain_stack_value(d)),
             Instruction::AllocateStack(i) => Instruction::AllocateStack(i),
             Instruction::Ret => Instruction::Ret,
-            Instruction::Binary(binary_operator, operand, operand1) => todo!(),
-            Instruction::Idiv(operand) => todo!(),
-            Instruction::Cdq => todo!(),
+            Instruction::Binary(binary_operator, operand, operand1) => Instruction::Binary(
+                binary_operator,
+                self.obtain_stack_value(operand),
+                self.obtain_stack_value(operand1),
+            ),
+            Instruction::Idiv(operand) => Instruction::Idiv(self.obtain_stack_value(operand)),
+            Instruction::Cdq => Instruction::Cdq,
         }
     }
 
