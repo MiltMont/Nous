@@ -237,7 +237,6 @@ impl<'a> Parser<'a> {
             self.next_token();
 
             let expression = self.parse_expression(0)?;
-
             self.next_token();
 
             if self.current_token_is(&Token::Semicolon) {
@@ -271,7 +270,7 @@ impl<'a> Parser<'a> {
     fn is_binary_operator(&self, token: &Token) -> bool {
         matches!(
             token,
-            Token::Add | Token::Mul | Token::Div | Token::Negation
+            Token::Add | Token::Mul | Token::Div | Token::Negation | Token::Remainder
         )
     }
 }
