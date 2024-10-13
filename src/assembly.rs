@@ -4,7 +4,10 @@ use std::{
     fmt::Debug,
 };
 
-use crate::{ast, tac};
+use crate::{
+    ast::{self},
+    tac::{self},
+};
 
 #[derive(Clone)]
 pub struct Program(pub Function);
@@ -100,6 +103,13 @@ impl Debug for Instruction {
             Self::Unary(arg0, arg1) => f.debug_tuple("\n\tUnary").field(arg0).field(arg1).finish(),
             Self::AllocateStack(arg0) => f.debug_tuple("\n\tAllocateStack").field(arg0).finish(),
             Self::Ret => write!(f, "\n\tRet\n\t\t"),
+            Instruction::Mov { src, dst } => todo!(),
+            Instruction::Unary(unary_operator, operand) => todo!(),
+            Instruction::Binary(binary_operator, operand, operand1) => todo!(),
+            Instruction::Idiv(operand) => todo!(),
+            Instruction::Cdq => todo!(),
+            Instruction::AllocateStack(_) => todo!(),
+            Instruction::Ret => todo!(),
         }
     }
 }
@@ -161,6 +171,8 @@ impl Reg {
         match self {
             Reg::AX => "%eax".to_string(),
             Reg::R10 => "%r10d".to_string(),
+            Reg::DX => todo!(),
+            Reg::R11 => todo!(),
         }
     }
 }
@@ -243,7 +255,7 @@ impl Assembly {
             tac::Instruction::Return(val) => {
                 vec![
                     Instruction::Mov {
-                        src: self.parse_operand(val),
+                        src: self.parse_operand(&val),
                         dst: Operand::Register(Reg::AX),
                     },
                     Instruction::Ret,
@@ -252,10 +264,13 @@ impl Assembly {
             tac::Instruction::Unary { operator, src, dst } => {
                 vec![
                     Instruction::Mov {
-                        src: self.parse_operand(src),
-                        dst: self.parse_operand(dst.clone()),
+                        src: self.parse_operand(&src),
+                        dst: self.parse_operand(&dst),
                     },
-                    Instruction::Unary(self.parse_operator(operator), self.parse_operand(dst)),
+                    Instruction::Unary(
+                        self.parse_unary_operator(operator),
+                        self.parse_operand(&dst),
+                    ),
                 ]
             }
             tac::Instruction::Binary {
@@ -263,20 +278,68 @@ impl Assembly {
                 src_1,
                 src_2,
                 dst,
-            } => todo!(),
+            } => match binary_operator {
+                ast::BinaryOperator::Divide => vec![
+                    Instruction::Mov {
+                        src: self.parse_operand(&src_1),
+                        dst: Operand::Register(Reg::AX),
+                    },
+                    Instruction::Cdq,
+                    Instruction::Idiv(self.parse_operand(&src_2)),
+                    Instruction::Mov {
+                        src: Operand::Register(Reg::AX),
+                        dst: self.parse_operand(&dst),
+                    },
+                ],
+                ast::BinaryOperator::Remainder => vec![
+                    Instruction::Mov {
+                        src: self.parse_operand(&src_1),
+                        dst: Operand::Register(Reg::AX),
+                    },
+                    Instruction::Cdq,
+                    Instruction::Idiv(self.parse_operand(&src_2)),
+                    Instruction::Mov {
+                        src: Operand::Register(Reg::DX),
+                        dst: self.parse_operand(&dst),
+                    },
+                ],
+                _ => {
+                    vec![
+                        Instruction::Mov {
+                            src: self.parse_operand(&src_1),
+                            dst: self.parse_operand(&dst),
+                        },
+                        Instruction::Binary(
+                            self.parse_binary_operator(binary_operator),
+                            self.parse_operand(&src_2),
+                            self.parse_operand(&dst),
+                        ),
+                    ]
+                }
+            },
         }
     }
 
-    fn parse_operator(&self, operator: ast::UnaryOperator) -> UnaryOperator {
+    fn parse_unary_operator(&self, operator: ast::UnaryOperator) -> UnaryOperator {
         match operator {
             ast::UnaryOperator::Negate => UnaryOperator::Neg,
             ast::UnaryOperator::Complement => UnaryOperator::Not,
         }
     }
 
-    fn parse_operand(&mut self, operand: tac::Val) -> Operand {
+    fn parse_binary_operator(&self, operator: ast::BinaryOperator) -> BinaryOperator {
+        match operator {
+            ast::BinaryOperator::Add => BinaryOperator::Add,
+            ast::BinaryOperator::Subtract => BinaryOperator::Sub,
+            ast::BinaryOperator::Multiply => BinaryOperator::Mult,
+            ast::BinaryOperator::Divide => BinaryOperator::Divide,
+            ast::BinaryOperator::Remainder => BinaryOperator::Remainder,
+        }
+    }
+
+    fn parse_operand(&mut self, operand: &tac::Val) -> Operand {
         match operand {
-            tac::Val::Constant(i) => Operand::Imm(i),
+            tac::Val::Constant(i) => Operand::Imm(*i),
             tac::Val::Var(id) => {
                 // Update the offset whenever we encounter a new identifier.
                 if !self
@@ -289,10 +352,11 @@ impl Assembly {
                 self.pseudo_registers
                     .insert(Operand::Pseudo(id.clone()), self.offset);
 
-                Operand::Pseudo(id)
+                Operand::Pseudo(id.clone())
             }
         }
     }
+
     /// Obtain the stack value of the operand
     fn obtain_stack_value(&self, operand: Operand) -> Operand {
         if self.pseudo_registers.contains_key(&operand) {
@@ -319,6 +383,9 @@ impl Assembly {
             Instruction::Unary(s, d) => Instruction::Unary(s, self.obtain_stack_value(d)),
             Instruction::AllocateStack(i) => Instruction::AllocateStack(i),
             Instruction::Ret => Instruction::Ret,
+            Instruction::Binary(binary_operator, operand, operand1) => todo!(),
+            Instruction::Idiv(operand) => todo!(),
+            Instruction::Cdq => todo!(),
         }
     }
 
