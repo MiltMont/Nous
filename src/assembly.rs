@@ -64,6 +64,9 @@ impl Debug for Function {
 pub enum Instruction {
     Mov { src: Operand, dst: Operand },
     Unary(UnaryOperator, Operand),
+    Binary(BinaryOperator, Operand, Operand),
+    Idiv(Operand),
+    Cdq,
     AllocateStack(i64),
     Ret,
 }
@@ -79,6 +82,9 @@ impl Instruction {
             }
             Instruction::AllocateStack(i) => format!("subq\t${}, %rsp", i),
             Instruction::Ret => "movq\t%rbp, %rsp\n\tpopq\t%rbp\n\tret".to_string(),
+            Instruction::Binary(binary_operator, operand, operand1) => todo!(),
+            Instruction::Idiv(operand) => todo!(),
+            Instruction::Cdq => todo!(),
         }
     }
 }
@@ -113,6 +119,15 @@ impl UnaryOperator {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BinaryOperator {
+    Add,
+    Sub,
+    Mult,
+    Divide,
+    Remainder,
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Operand {
     Imm(i64),
@@ -136,7 +151,9 @@ impl Operand {
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Reg {
     AX,
+    DX,
     R10,
+    R11,
 }
 
 impl Reg {

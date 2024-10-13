@@ -1,3 +1,3 @@
 int nested(void) {
-  return -(3);
+  return -3;
 }
