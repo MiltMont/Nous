@@ -104,8 +104,8 @@ impl Debug for Instruction {
             Self::Unary(arg0, arg1) => f.debug_tuple("\n\tUnary").field(arg0).field(arg1).finish(),
             Self::AllocateStack(arg0) => f.debug_tuple("\n\tAllocateStack").field(arg0).finish(),
             Self::Ret => write!(f, "\n\tRet\n\t\t"),
-            Self::Idiv(operand) => f.debug_tuple("Idiv").field(operand).finish(),
-            Self::Cdq => write!(f, "\n\tCdq\n\t\t"),
+            Self::Idiv(operand) => f.debug_tuple("\n\tIdiv").field(operand).finish(),
+            Self::Cdq => write!(f, "\n\tCdq"),
             Self::Binary(operator, src, dst) => f
                 .debug_tuple("\n\tBinary")
                 .field(operator)
