@@ -226,6 +226,7 @@ impl Assembly {
         self.program = self
             .replace_pseudo_registers()
             .rewrite_mov()
+            .rewrite_binop()
             .allocate_stack();
 
         self.program.clone().expect("Returning program")
@@ -251,7 +252,6 @@ impl Assembly {
         }
     }
 
-    #[allow(unused_variables)]
     fn parse_instruction(&mut self, instruction: tac::Instruction) -> Vec<Instruction> {
         match instruction {
             tac::Instruction::Return(val) => {
@@ -281,18 +281,20 @@ impl Assembly {
                 src_2,
                 dst,
             } => match binary_operator {
-                ast::BinaryOperator::Divide => vec![
-                    Instruction::Mov {
-                        src: self.parse_operand(&src_1),
-                        dst: Operand::Register(Reg::AX),
-                    },
-                    Instruction::Cdq,
-                    Instruction::Idiv(self.parse_operand(&src_2)),
-                    Instruction::Mov {
-                        src: Operand::Register(Reg::AX),
-                        dst: self.parse_operand(&dst),
-                    },
-                ],
+                ast::BinaryOperator::Divide => {
+                    vec![
+                        Instruction::Mov {
+                            src: self.parse_operand(&src_1),
+                            dst: Operand::Register(Reg::AX),
+                        },
+                        Instruction::Cdq,
+                        Instruction::Idiv(self.parse_operand(&src_2)),
+                        Instruction::Mov {
+                            src: Operand::Register(Reg::AX),
+                            dst: self.parse_operand(&dst),
+                        },
+                    ]
+                }
                 ast::BinaryOperator::Remainder => vec![
                     Instruction::Mov {
                         src: self.parse_operand(&src_1),
@@ -458,7 +460,7 @@ impl Assembly {
         for instruction in temp_instructions {
             match &instruction {
                 Instruction::Mov { src, dst } => {
-                    if matches!(src, Operand::Stack(_)) && matches!(dst, Operand::Stack(_)) {
+                    if matches!(&src, Operand::Stack(_)) && matches!(dst, Operand::Stack(_)) {
                         new_instructions.push(Instruction::Mov {
                             src: src.clone(),
                             dst: Operand::Register(Reg::R10),
@@ -478,6 +480,101 @@ impl Assembly {
         self.program
             .as_mut()
             .expect("Modifying instruction stack")
+            .0
+            .instructions = new_instructions;
+
+        self
+    }
+
+    /// Rewrites present binary operations in the instruction stack.
+    fn rewrite_binop(&mut self) -> &mut Self {
+        let mut new_instructions: Vec<Instruction> = Vec::new();
+        for instruction in &self
+            .program
+            .as_ref()
+            .expect("Referencing instruction stack")
+            .0
+            .instructions
+        {
+            match instruction {
+                // Whenever 'idiv' needs to operate on a constant,
+                // we copy that constant into our scratch register first.
+                Instruction::Idiv(op) => {
+                    // After using 'parse_operand' we deduce operand
+                    // must be Pseudo or Imm. Here I assume is not
+                    // Pseudo.
+                    new_instructions.push(Instruction::Mov {
+                        src: op.clone(),
+                        dst: Operand::Register(Reg::R10),
+                    });
+
+                    new_instructions.push(Instruction::Idiv(Operand::Register(Reg::R10)));
+                }
+                Instruction::Binary(operator, src, dst) => {
+                    match operator {
+                        // The 'add' and 'sub' instructions, like 'mov', can't
+                        // use memory addresses as both the source and destination operands.
+                        BinaryOperator::Add => {
+                            new_instructions.push(Instruction::Mov {
+                                src: src.clone(),
+                                dst: Operand::Register(Reg::R10),
+                            });
+
+                            new_instructions.push(Instruction::Binary(
+                                BinaryOperator::Add,
+                                Operand::Register(Reg::R10),
+                                dst.clone(),
+                            ));
+                        }
+                        BinaryOperator::Sub => {
+                            new_instructions.push(Instruction::Mov {
+                                src: src.clone(),
+                                dst: Operand::Register(Reg::R10),
+                            });
+
+                            new_instructions.push(Instruction::Binary(
+                                BinaryOperator::Sub,
+                                Operand::Register(Reg::R10),
+                                dst.clone(),
+                            ));
+                        }
+                        BinaryOperator::Mult => {
+                            // The 'imul' instruction cant use a memory address as
+                            // its destination, regardless of its source operand.
+                            // To fix and instruction's destination operand, we use
+                            // the R11 register instead of R10.
+                            //
+                            // To fix 'imul' we load the destination into R11,
+                            // multiply it by the source operand, and then store
+                            // the result back to the destination address.
+                            new_instructions.push(Instruction::Mov {
+                                src: dst.clone(),
+                                dst: Operand::Register(Reg::R11),
+                            });
+
+                            new_instructions.push(Instruction::Binary(
+                                BinaryOperator::Mult,
+                                src.clone(),
+                                Operand::Register(Reg::R11),
+                            ));
+
+                            new_instructions.push(Instruction::Mov {
+                                src: Operand::Register(Reg::R11),
+                                dst: dst.clone(),
+                            });
+                        }
+                        BinaryOperator::Divide => todo!("unimplemented!"),
+                        BinaryOperator::Remainder => todo!(),
+                    }
+                }
+                _ => new_instructions.push(instruction.clone()),
+            }
+        }
+
+        // Replacing instructions
+        self.program
+            .as_mut()
+            .expect("Replacing instruction stack")
             .0
             .instructions = new_instructions;
 
