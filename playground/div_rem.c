@@ -1,3 +1,3 @@
-int div_rem(void) {
-  return 1 % 2 + 4 * 3 / 2; 
+int main(void) {
+  return 4/2; 
 }

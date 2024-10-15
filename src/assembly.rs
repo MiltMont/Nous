@@ -16,7 +16,7 @@ impl Program {
     pub fn format(&self) -> String {
         if env::consts::OS == "linux" {
             format!(
-                "{}\n\t.section .note.GNU-stack,'',@progbits",
+                r#"{}.section .note.GNU-stack,"",@progbits"#,
                 self.0.format()
             )
         } else {
@@ -86,9 +86,14 @@ impl Instruction {
             }
             Instruction::AllocateStack(i) => format!("subq\t${}, %rsp", i),
             Instruction::Ret => "movq\t%rbp, %rsp\n\tpopq\t%rbp\n\tret".to_string(),
-            Instruction::Binary(binary_operator, operand, operand1) => todo!(),
-            Instruction::Idiv(operand) => todo!(),
-            Instruction::Cdq => todo!(),
+            Instruction::Binary(binary_operator, operand, operand1) => format!(
+                "{}\t{}, {}",
+                binary_operator.format(),
+                operand.format(),
+                operand1.format()
+            ),
+            Instruction::Idiv(operand) => format!("idivl\t{}", operand.format()),
+            Instruction::Cdq => "cdq".to_string(),
         }
     }
 }
@@ -140,6 +145,17 @@ pub enum BinaryOperator {
     Remainder,
 }
 
+impl BinaryOperator {
+    pub fn format(&self) -> String {
+        match self {
+            Self::Add => "addl".to_string(),
+            Self::Sub => "subl".to_string(),
+            Self::Mult => "imull".to_string(),
+            o => format!("The operation {o:?} should not be formated"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Operand {
     Imm(i64),
@@ -153,9 +169,9 @@ impl Operand {
         match self {
             Operand::Imm(i) => format!("${}", i),
             Operand::Register(r) => r.format(),
-            // TODO: Pseudo registers must be removed at this point.
+            // HACK: Pseudo registers are never formated.
             Operand::Pseudo(_) => todo!(),
-            Operand::Stack(s) => format!("{}(%rbp)", s),
+            Operand::Stack(s) => format!("-{}(%rbp)", s),
         }
     }
 }
@@ -173,8 +189,8 @@ impl Reg {
         match self {
             Reg::AX => "%eax".to_string(),
             Reg::R10 => "%r10d".to_string(),
-            Reg::DX => todo!(),
-            Reg::R11 => todo!(),
+            Reg::DX => "%edx".to_string(),
+            Reg::R11 => "%r11d".to_string(),
         }
     }
 }
