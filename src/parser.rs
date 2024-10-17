@@ -203,7 +203,8 @@ impl<'a> Parser<'a> {
 
     /// <factor> ::== <int> | <unop> <factor> | "(" <exp> ")"
     fn parse_factor(&mut self) -> Result<ast::Expression, String> {
-        match self.current_token {
+        let current = self.current_token.clone();
+        match current {
             Token::Constant(i) => Ok(ast::Expression::Constant(i)),
             // If token is "~" or "-"
             Token::Negation | Token::BitComp => {
@@ -214,8 +215,7 @@ impl<'a> Parser<'a> {
             }
             Token::LParen => {
                 self.next_token();
-                let inner_expression =
-                    self.parse_expression(self.get_precedence(&self.peek_token).unwrap());
+                let inner_expression = self.parse_expression(0);
                 self.next_token();
                 if self.current_token_is(&Token::RParen) {
                     inner_expression

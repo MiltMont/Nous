@@ -1,9 +1,29 @@
 #[cfg(test)]
 mod tests {
     use nous::{
-        ast::{BinaryOperator, Expression, Program},
+        ast::{BinaryOperator, Expression, Function, Identifier, Program, UnaryOperator},
+        parser::Parser,
         utils::parser_from_file,
     };
+    // Testing unary operators
+    #[test]
+    fn test_unary() {
+        let mut parser = parser_from_file("playground/test_unary.c");
+        let expected_expression = Expression::Unary(
+            UnaryOperator::Negate,
+            Box::new(Expression::Unary(
+                UnaryOperator::Negate,
+                Box::new(Expression::Constant(2)),
+            )),
+        );
+
+        let expected_program = Program(Function {
+            name: Identifier(String::from("main")),
+            body: nous::ast::Statement::Return(expected_expression),
+        });
+
+        assert_eq!(parser.to_ast_program(), expected_program)
+    }
 
     // Testing binary operators
     #[test]
