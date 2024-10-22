@@ -1,17 +1,32 @@
-use crate assembly::{Program, Instruction};
+use crate::{assembly::{Program, Instruction}};
 
 struct AssemblyPass {
     program: Program,
     instructions: Vec<Instruction>
 }
 
+/// Visits an instance of an assembly program 
+/// and modifies it's instruction array. 
+/// Usage: 
+/// 
+/// ```
+/// let mut program = assembly.to_assembly_program();
+/// let mut visitor = AssemblyPass::new(program);
+/// visitor.replace_pseudo_registers()
+/// println!("{:?}", visitor.instructions);
+///
+/// ```
 impl AssemblyPass {
-    /// Constructs a visitor from an 
-    /// Assembly instance whenever the program 
-    /// field is not None, otherwise it 
-    /// returns an Error.  
-    pub fn build(assembly: assembly::Program) -> Result<Self, String>{
-        todo!()
+    /// Constructs a visitor from a given 
+    /// assembly program instance. 
+    pub fn build(assembly_program: Program) -> Self {
+        // Takes ownership of the assembly program and clones
+        // its instruction set. 
+        let instructions: Vec<Instruction> = assembly_program.0.instructions.clone();
+        Self {
+            program: assembly_program, 
+            instructions: instructions, 
+        }
     }
 
     // TODO: Implement 
@@ -39,9 +54,11 @@ impl AssemblyPass {
     }
 
     /// Replaces the instruction set on 
-    /// the original assembly value and returns
+    /// the original program and returns
     /// the modified instance. 
-    pub fn modify_assembly(self) -> Program {
-        todo!()
+    pub fn modify_program(&mut self) -> Program {
+        self.program.0.instructions = self.instructions;
+
+        self.program
     }
 }
