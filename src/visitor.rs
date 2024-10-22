@@ -57,8 +57,8 @@ impl AssemblyPass {
     /// the original program and returns
     /// the modified instance. 
     pub fn modify_program(&mut self) -> Program {
-        self.program.0.instructions = self.instructions;
+        self.program.0.instructions = self.instructions.clone();
 
-        self.program
+        self.program.clone()
     }
 }

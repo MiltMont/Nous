@@ -236,15 +236,7 @@ impl Assembly {
         // Parsing the program
         self.parse_program();
 
-        //
-        // Program post-processing.
-        //
-        self.program = self
-            .replace_pseudo_registers()
-            .rewrite_mov()
-            .rewrite_binop()
-            .allocate_stack();
-
+        // FIX: Avoid cloning the program.
         self.program.clone().expect("Returning program")
     }
 
