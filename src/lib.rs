@@ -5,3 +5,4 @@ pub mod lexer;
 pub mod parser;
 pub mod tac;
 pub mod utils;
+pub mod visitor;
