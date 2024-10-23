@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
-use crate::assembly::{BinaryOperator, Instruction, Operand, Program, Reg};
+use crate::assembly::{Assembly, BinaryOperator, Instruction, Operand, Program, Reg};
 
 /// Visits a program instruction stack
 /// and makes modifications based on information
@@ -9,6 +9,7 @@ pub struct AssemblyPass {
     program: Program,
     instructions: Vec<Instruction>,
     pseudo_registers: HashMap<Operand, i64>,
+    offset: i64,
 }
 
 /// Visits an instance of an assembly program
@@ -23,17 +24,30 @@ pub struct AssemblyPass {
 ///
 /// ```
 impl AssemblyPass {
-    /// Constructs a visitor from a given
-    /// assembly program instance.
-    pub fn new(program: Program, pseudo_registers: HashMap<Operand, i64>) -> Self {
-        // Takes ownership of the assembly program and clones
-        // its instruction set.
-        let instructions: Vec<Instruction> = program.0.instructions.clone();
-        Self {
-            program,
-            instructions,
-            pseudo_registers,
+    /// Tries to construct an AssemblyPass visitor
+    /// given an Assembly instance. In order to do so, the
+    /// program field in such instance must be not None.
+    pub fn build(assembly: Assembly) -> Self {
+        if let Some(program) = assembly.program {
+            let instructions = program.0.instructions.clone();
+            Self {
+                program,
+                instructions,
+                pseudo_registers: assembly.pseudo_registers,
+                offset: assembly.offset,
+            }
+        } else {
+            panic!("The program must exists in order to create the AssemblyPass instance. Try parsing the program fist.")
         }
+        // // Takes ownership of the assembly program and clones
+        // // its instruction set.
+        // let instructions: Vec<Instruction> = program.0.instructions.clone();
+        // Self {
+        //     program,
+        //     instructions,
+        //     pseudo_registers,
+        //     offset,
+        // }
     }
 
     pub fn print_instructions(&self, debug_info: Option<&str>) {
@@ -202,7 +216,13 @@ impl AssemblyPass {
     }
 
     pub fn allocate_stack(&mut self) -> &mut Self {
-        todo!()
+        let mut new_instructions: VecDeque<Instruction> = VecDeque::from(self.instructions.clone());
+
+        new_instructions.push_front(Instruction::AllocateStack(self.offset));
+
+        self.instructions = new_instructions.into();
+
+        self
     }
 
     /// Replaces the instruction set on

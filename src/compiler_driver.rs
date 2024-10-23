@@ -209,9 +209,11 @@ impl CompilerDriver {
             let mut parser = Parser::build(&mut lexer);
             let mut tac = TAC::build(parser.to_ast_program());
             let mut assembly = Assembly::new(tac.to_tac_program());
+            // Parsing the program
+            assembly.parse_program();
 
-            let mut visitor =
-                AssemblyPass::new(assembly.to_assembly_program(), assembly.pseudo_registers);
+            // Visiting the program
+            let mut visitor = AssemblyPass::build(assembly);
             visitor.print_instructions(Some("Original instructions"));
             visitor.replace_pseudo_registers();
             visitor.print_instructions(Some("Replacing pseudo registers"));

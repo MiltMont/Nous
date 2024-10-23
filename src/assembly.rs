@@ -215,9 +215,9 @@ impl Reg {
 ///
 pub struct Assembly {
     source: tac::Program,
-    program: Option<Program>,
+    pub program: Option<Program>,
     pub pseudo_registers: HashMap<Operand, i64>,
-    offset: i64,
+    pub offset: i64,
 }
 
 impl Assembly {
@@ -240,7 +240,7 @@ impl Assembly {
         self.program.clone().expect("Returning program")
     }
 
-    fn parse_program(&mut self) -> Program {
+    pub fn parse_program(&mut self) -> Program {
         self.program = Some(Program(self.parse_function(self.source.0.clone())));
 
         self.program.clone().expect("Returning program")
