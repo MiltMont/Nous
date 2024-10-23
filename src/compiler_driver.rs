@@ -2,7 +2,7 @@ use crate::assembly::Assembly;
 use crate::lexer::Token;
 use crate::parser::Parser;
 use crate::tac::TAC;
-use crate::visitor::{self, AssemblyPass};
+use crate::visitor::AssemblyPass;
 use clap::Parser as ClapParser;
 use logos::Logos;
 use std::fs::{self, File};
@@ -243,33 +243,6 @@ impl CompilerDriver {
         }
     }
 
-    //fn emit_code(&self) -> Result<(), String> {
-    //    if self.file.exists() {
-    //        let file = fs::read_to_string(&self.file).expect("Unable to read file.");
-    //        let mut lexer = Token::lexer(&file);
-    //        let mut parser = CParser::build(&mut lexer);
-    //
-    //        if let Ok(program) = parser.parse_program() {
-    //            let tac = TacGenerator::build(program).parse_program();
-    //            let mut assembly = AssemblyParser::new(tac);
-    //            assembly.convert_program();
-    //
-    //            let test = assembly.replace_pseudo_reg()
-    //                .rewrite_mov()
-    //                .allocate_stack();
-    //
-    //            let result = test.unwrap().format();
-    //            println!("{}", result);
-    //
-    //            Ok(())
-    //        } else {
-    //            Err(format!("{:?}", parser.errors))
-    //        }
-    //    } else {
-    //        Err("Failed parsing file, no such file".to_string())
-    //    }
-    //}
-    //
     /// Emmits final assembly code
     fn emit_code(&self) -> Result<(), String> {
         if self.file.exists() {
