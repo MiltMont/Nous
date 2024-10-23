@@ -216,7 +216,7 @@ impl Reg {
 pub struct Assembly {
     source: tac::Program,
     program: Option<Program>,
-    pseudo_registers: HashMap<Operand, i64>,
+    pub pseudo_registers: HashMap<Operand, i64>,
     offset: i64,
 }
 

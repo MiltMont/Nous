@@ -2,6 +2,7 @@ use crate::assembly::Assembly;
 use crate::lexer::Token;
 use crate::parser::Parser;
 use crate::tac::TAC;
+use crate::visitor::{self, AssemblyPass};
 use clap::Parser as ClapParser;
 use logos::Logos;
 use std::fs::{self, File};
@@ -209,25 +210,12 @@ impl CompilerDriver {
             let mut tac = TAC::build(parser.to_ast_program());
             let mut assembly = Assembly::new(tac.to_tac_program());
 
-            println!("{:?}", assembly.to_assembly_program());
+            let mut visitor =
+                AssemblyPass::new(assembly.to_assembly_program(), assembly.pseudo_registers);
+            visitor.print_instructions(Some("Original instructions"));
+            visitor.replace_pseudo_registers();
+            visitor.print_instructions(Some("Replacing pseudo registers"));
             Ok(())
-            //if let Ok(program) = parser.parse_program() {
-            //    let tac = TacGenerator::build(program).parse_program();
-            //    let mut assembly = AssemblyParser::new(tac);
-            //    let assembly_program = assembly.convert_program();
-            //
-            //    let with_stack =
-            //        assembly.replace_pseudo_reg()
-            //        .rewrite_mov()
-            //        .allocate_stack();
-            //
-            //    println!("{:?}\n", assembly_program);
-            //    println!("{:?}", with_stack.clone());
-            //
-            //    Ok(())
-            //} else {
-            //    Err(format!("{:?}", parser.errors))
-            //}
         } else {
             Err("Failed parsing file, no such file".to_string())
         }

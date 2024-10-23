@@ -1,14 +1,20 @@
-use crate::{assembly::{Program, Instruction}};
+use std::{borrow::Borrow, collections::HashMap};
 
-struct AssemblyPass {
+use crate::assembly::{Instruction, Operand, Program};
+
+/// Visits a program instruction stack
+/// and makes modifications based on information
+/// provided by its Assembly struct.
+pub struct AssemblyPass {
     program: Program,
-    instructions: Vec<Instruction>
+    instructions: Vec<Instruction>,
+    pseudo_registers: HashMap<Operand, i64>,
 }
 
-/// Visits an instance of an assembly program 
-/// and modifies it's instruction array. 
-/// Usage: 
-/// 
+/// Visits an instance of an assembly program
+/// and modifies it's instruction array.
+/// Usage:
+///
 /// ```
 /// let mut program = assembly.to_assembly_program();
 /// let mut visitor = AssemblyPass::new(program);
@@ -17,33 +23,83 @@ struct AssemblyPass {
 ///
 /// ```
 impl AssemblyPass {
-    /// Constructs a visitor from a given 
-    /// assembly program instance. 
-    pub fn build(assembly_program: Program) -> Self {
+    /// Constructs a visitor from a given
+    /// assembly program instance.
+    pub fn new(program: Program, pseudo_registers: HashMap<Operand, i64>) -> Self {
         // Takes ownership of the assembly program and clones
-        // its instruction set. 
-        let instructions: Vec<Instruction> = assembly_program.0.instructions.clone();
+        // its instruction set.
+        let instructions: Vec<Instruction> = program.0.instructions.clone();
         Self {
-            program: assembly_program, 
-            instructions: instructions, 
+            program,
+            instructions,
+            pseudo_registers,
         }
     }
 
-    // TODO: Implement 
+    pub fn print_instructions(&self, debug_info: Option<&str>) {
+        if let Some(info) = debug_info {
+            println!("{info}");
+        }
+        println!("{:?}", self.instructions);
+    }
+
+    // TODO: Implement
     //
-    // replace_pseudo_registers()
     // rewrite_mov()
     // rewrite_binop()
     // allocate_stack()
-    // 
+    //
+
+    fn get_stack_value(&self, operand: &Operand) -> Operand {
+        // println!("{:?}", self.pseudo_registers.clone());
+        if self.pseudo_registers.contains_key(operand) {
+            Operand::Stack(
+                *self
+                    .pseudo_registers
+                    .get(operand)
+                    .expect("Should return the operand stack value"),
+            )
+        } else {
+            // HACK: Why am I doing this?
+            operand.clone()
+        }
+    }
+
+    fn convert_register(&self, instruction: &Instruction) -> Instruction {
+        match instruction {
+            Instruction::Mov { src, dst } => Instruction::Mov {
+                src: self.get_stack_value(src),
+                dst: self.get_stack_value(dst),
+            },
+            Instruction::Unary(op, operand) => {
+                Instruction::Unary(op.clone(), self.get_stack_value(operand))
+            }
+            Instruction::Binary(binop, x, y) => Instruction::Binary(
+                binop.clone(),
+                self.get_stack_value(x),
+                self.get_stack_value(y),
+            ),
+            Instruction::Idiv(operand) => Instruction::Idiv(self.get_stack_value(operand)),
+            Instruction::Cdq => Instruction::Cdq,
+            Instruction::AllocateStack(i) => Instruction::AllocateStack(*i),
+            Instruction::Ret => Instruction::Ret,
+        }
+    }
 
     pub fn replace_pseudo_registers(&mut self) -> &mut Self {
-        todo!()
+        let new_instructions: Vec<Instruction> = self
+            .instructions
+            .clone()
+            .iter()
+            .map(|x| self.convert_register(x))
+            .collect();
+        self.instructions = new_instructions;
+        self
     }
 
     pub fn rewrite_mov(&mut self) -> &mut Self {
         todo!()
-    } 
+    }
 
     pub fn rewrite_binop(&mut self) -> &mut Self {
         todo!()
@@ -53,9 +109,9 @@ impl AssemblyPass {
         todo!()
     }
 
-    /// Replaces the instruction set on 
+    /// Replaces the instruction set on
     /// the original program and returns
-    /// the modified instance. 
+    /// the modified instance.
     pub fn modify_program(&mut self) -> Program {
         self.program.0.instructions = self.instructions.clone();
 
