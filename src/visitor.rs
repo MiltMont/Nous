@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, collections::HashMap};
 
-use crate::assembly::{Instruction, Operand, Program};
+use crate::assembly::{Instruction, Operand, Program, Reg};
 
 /// Visits a program instruction stack
 /// and makes modifications based on information
@@ -98,7 +98,29 @@ impl AssemblyPass {
     }
 
     pub fn rewrite_mov(&mut self) -> &mut Self {
-        todo!()
+        let mut new_instructions: Vec<Instruction> = Vec::new();
+
+        for instruction in &self.instructions {
+            match instruction {
+                Instruction::Mov { src, dst } => {
+                    if matches!(src, Operand::Stack(_)) && matches!(dst, Operand::Stack(_)) {
+                        new_instructions.push(Instruction::Mov {
+                            src: src.clone(),
+                            dst: Operand::Register(Reg::R10),
+                        });
+                        new_instructions.push(Instruction::Mov {
+                            src: Operand::Register(Reg::R10),
+                            dst: dst.clone(),
+                        });
+                    } else {
+                        new_instructions.push(instruction.clone())
+                    }
+                }
+                _ => new_instructions.push(instruction.clone()),
+            }
+        }
+        self.instructions = new_instructions;
+        self
     }
 
     pub fn rewrite_binop(&mut self) -> &mut Self {
