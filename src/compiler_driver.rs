@@ -217,6 +217,8 @@ impl CompilerDriver {
             visitor.print_instructions(Some("Replacing pseudo registers"));
             visitor.rewrite_mov();
             visitor.print_instructions(Some("Rewriting move instructions"));
+            visitor.rewrite_binop();
+            visitor.print_instructions(Some("Rewriting binary operators"));
             Ok(())
         } else {
             Err("Failed parsing file, no such file".to_string())

@@ -197,6 +197,7 @@ impl AssemblyPass {
                 _ => new_instructions.push(instruction.clone()),
             }
         }
+        self.instructions = new_instructions;
         self
     }
 
