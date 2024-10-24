@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::ast;
+use crate::ast::{self, Identifier};
 
 /// A three address code program representation.
 #[derive(Debug)]
@@ -36,6 +36,22 @@ pub enum Instruction {
         src_2: Val,
         dst: Val,
     },
+    Copy {
+        src: Val,
+        dst: Val,
+    },
+    Jump {
+        target: Identifier,
+    },
+    JumpIfZero {
+        condition: Val,
+        target: Identifier,
+    },
+    JumpIfNotZero {
+        condition: Val,
+        target: Identifier,
+    },
+    Label(Identifier),
 }
 
 impl Debug for Instruction {
@@ -50,11 +66,22 @@ impl Debug for Instruction {
                 src_1,
                 src_2,
                 dst,
-            } => write!(
-                f,
-                "\n\t\tBinary({:?}, {:?}, {:?}, {:?})",
-                binary_operator, src_1, src_2, dst
-            ),
+            } => {
+                write!(
+                    f,
+                    "\n\t\tBinary({:?}, {:?}, {:?}, {:?})",
+                    binary_operator, src_1, src_2, dst
+                )
+            }
+            Self::Copy { src, dst } => write!(f, "\n\t\tCopy({:?}, {:?})", src, dst),
+            Self::Jump { target } => write!(f, "\n\t\tJump({:?})", target),
+            Self::JumpIfZero { condition, target } => {
+                write!(f, "\n\t\tJumpIfZero({:?}, {:?})", condition, target)
+            }
+            Self::Label(identifier) => write!(f, "\n\t\tLabel({:?})", identifier),
+            Self::JumpIfNotZero { condition, target } => {
+                write!(f, "\n\t\tJumpIfNotZero({:?}, {:?})", condition, target)
+            }
         }
     }
 }
@@ -137,19 +164,92 @@ impl TAC {
                 });
                 dst
             }
-            ast::Expression::Binary(op, e1, e2) => {
-                let v1 = self.parse_val(*e1);
-                let v2 = self.parse_val(*e2);
-                let dst_name = self.make_temporary_name();
-                let dst = Val::Var(ast::Identifier(dst_name));
-                self.instructions.push(Instruction::Binary {
-                    binary_operator: op,
-                    src_1: v1,
-                    src_2: v2,
-                    dst: dst.clone(),
-                });
-                dst
-            }
+            ast::Expression::Binary(op, e1, e2) => match op {
+                ast::BinaryOperator::And => {
+                    let v1 = self.parse_val(*e1);
+                    let v2 = self.parse_val(*e2);
+
+                    self.instructions.append(
+                        vec![
+                            Instruction::JumpIfZero {
+                                condition: v1,
+                                target: Identifier("false_label".into()),
+                            },
+                            Instruction::JumpIfZero {
+                                condition: v2,
+                                target: Identifier("false_label".into()),
+                            },
+                            Instruction::Copy {
+                                src: Val::Constant(1),
+                                dst: Val::Var(Identifier("result".into())),
+                            },
+                            Instruction::Jump {
+                                target: Identifier("end".into()),
+                            },
+                            Instruction::Label(Identifier("false_label".into())),
+                            Instruction::Copy {
+                                src: Val::Constant(0),
+                                dst: Val::Var(Identifier("result".into())),
+                            },
+                            Instruction::Label(Identifier("end".into())),
+                        ]
+                        .as_mut(),
+                    );
+
+                    Val::Var(Identifier("result".into()))
+                }
+
+                ast::BinaryOperator::Or => {
+                    let v1 = self.parse_val(*e1);
+                    let v2 = self.parse_val(*e2);
+
+                    self.instructions.append(
+                        vec![
+                            Instruction::JumpIfNotZero {
+                                condition: v1,
+                                target: Identifier("false_label".into()),
+                            },
+                            Instruction::JumpIfNotZero {
+                                condition: v2,
+                                target: Identifier("false_label".into()),
+                            },
+                            // If no jumps are performed then both values
+                            // are zero, meaning the result is 0.
+                            Instruction::Copy {
+                                src: Val::Constant(0),
+                                dst: Val::Var(Identifier("result".into())),
+                            },
+                            Instruction::Jump {
+                                target: Identifier("end".into()),
+                            },
+                            // If we jump to this label then one of the values
+                            // is non-zero, meaning the result is 1.
+                            Instruction::Label(Identifier("false_label".into())),
+                            Instruction::Copy {
+                                src: Val::Constant(1),
+                                dst: Val::Var(Identifier("result".into())),
+                            },
+                            Instruction::Label(Identifier("end".into())),
+                        ]
+                        .as_mut(),
+                    );
+                    Val::Var(Identifier("result".into()))
+                }
+
+                _ => {
+                    let v1 = self.parse_val(*e1);
+                    let v2 = self.parse_val(*e2);
+                    let dst_name = self.make_temporary_name();
+                    let dst = Val::Var(ast::Identifier(dst_name));
+                    self.instructions.push(Instruction::Binary {
+                        binary_operator: op,
+                        src_1: v1,
+                        src_2: v2,
+                        dst: dst.clone(),
+                    });
+                    dst
+                }
+            },
         }
     }
 

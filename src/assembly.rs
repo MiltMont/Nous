@@ -325,6 +325,7 @@ impl Assembly {
                     ]
                 }
             },
+            _ => todo!(),
         }
     }
 
