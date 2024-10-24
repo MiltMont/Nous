@@ -1,4 +1,3 @@
 int main(void) {
-  // This returns 0
-  return 256; 
+  return 10*10*2; 
 }

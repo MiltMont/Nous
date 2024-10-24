@@ -57,14 +57,7 @@ impl AssemblyPass {
         println!("{:?}", self.instructions);
     }
 
-    // TODO: Implement
-    //
-    // rewrite_binop()
-    // allocate_stack()
-    //
-
     fn get_stack_value(&self, operand: &Operand) -> Operand {
-        // println!("{:?}", self.pseudo_registers.clone());
         if self.pseudo_registers.contains_key(operand) {
             Operand::Stack(
                 *self
@@ -73,7 +66,6 @@ impl AssemblyPass {
                     .expect("Should return the operand stack value"),
             )
         } else {
-            // HACK: Why am I doing this?
             operand.clone()
         }
     }
@@ -99,6 +91,7 @@ impl AssemblyPass {
         }
     }
 
+    /// Replaces pseudo registers on all instructions.
     pub fn replace_pseudo_registers(&mut self) -> &mut Self {
         let new_instructions: Vec<Instruction> = self
             .instructions
@@ -110,6 +103,8 @@ impl AssemblyPass {
         self
     }
 
+    /// Rewrites move instructions, whenever both `src` and `dst`
+    /// are Stack operands.
     pub fn rewrite_mov(&mut self) -> &mut Self {
         let mut new_instructions: Vec<Instruction> = Vec::new();
 
@@ -215,6 +210,7 @@ impl AssemblyPass {
         self
     }
 
+    /// Pushes a new AllocateStack to the front of the instruction stream.
     pub fn allocate_stack(&mut self) -> &mut Self {
         let mut new_instructions: VecDeque<Instruction> = VecDeque::from(self.instructions.clone());
 

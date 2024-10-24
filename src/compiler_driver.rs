@@ -99,7 +99,18 @@ impl CompilerDriver {
             let mut parser = Parser::build(&mut lexer);
             let mut tac = TAC::build(parser.to_ast_program());
             let mut assembly = Assembly::new(tac.to_tac_program());
+            // Parsing the assembly program.
+            assembly.parse_program();
+            // Realizing the assembly passes.
+            let mut assembly_pass = AssemblyPass::build(assembly);
+            assembly_pass
+                .replace_pseudo_registers()
+                .rewrite_binop()
+                .rewrite_mov()
+                .allocate_stack();
 
+            let assembly_program = assembly_pass.modify_program();
+            println!("{:?}", assembly_program);
             let output_path = output_assembler
                 .clone()
                 .into_os_string()
@@ -116,7 +127,7 @@ impl CompilerDriver {
                 Ok(file) => file,
             };
 
-            match file.write_all(assembly.to_assembly_program().format().as_bytes()) {
+            match file.write_all(assembly_program.format().as_bytes()) {
                 Err(why) => panic!("couldn't write to {}: {}", display, why),
                 Ok(_) => println!("successfully wrote to {}", display),
             }
@@ -202,6 +213,22 @@ impl CompilerDriver {
         }
     }
 
+    /// Output the three adress code intermediate representation.
+    fn tac_gen(&self) -> Result<(), String> {
+        if self.file.exists() {
+            let file = fs::read_to_string(&self.file).expect("Unable to read file");
+
+            let mut lexer = Token::lexer(&file);
+            let mut parser = Parser::build(&mut lexer);
+            let mut tac = TAC::build(parser.to_ast_program());
+            println!("{:?}", tac.to_tac_program());
+
+            Ok(())
+        } else {
+            Err("Failed finding file, no such file".to_string())
+        }
+    }
+
     fn code_gen(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
@@ -227,22 +254,6 @@ impl CompilerDriver {
         }
     }
 
-    /// Output the three adress code intermediate representation.
-    fn tac_gen(&self) -> Result<(), String> {
-        if self.file.exists() {
-            let file = fs::read_to_string(&self.file).expect("Unable to read file");
-
-            let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer);
-            let mut tac = TAC::build(parser.to_ast_program());
-            println!("{:?}", tac.to_tac_program());
-
-            Ok(())
-        } else {
-            Err("Failed finding file, no such file".to_string())
-        }
-    }
-
     /// Emmits final assembly code
     fn emit_code(&self) -> Result<(), String> {
         if self.file.exists() {
@@ -251,8 +262,16 @@ impl CompilerDriver {
             let mut parser = Parser::build(&mut lexer);
             let mut tac = TAC::build(parser.to_ast_program());
             let mut assembly = Assembly::new(tac.to_tac_program());
+            assembly.parse_program();
+            let mut visitor = AssemblyPass::build(assembly);
+            visitor
+                .replace_pseudo_registers()
+                .rewrite_mov()
+                .rewrite_binop()
+                .allocate_stack();
 
-            println!("{}", assembly.to_assembly_program().format());
+            let assembly_program = visitor.modify_program();
+            println!("{}", assembly_program.format());
 
             Ok(())
         } else {
