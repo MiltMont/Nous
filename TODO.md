@@ -1,5 +1,10 @@
 # TODO
 
+## Tests 
+
+- [ ] Add lexer tests for logical and relational operators. 
+- [ ] Make documentations tests pass. 
+
 ## Parser
 
 - [x] Fix errors when compiling expressions containing nested unary operators. (`~(-(3))`) 
@@ -7,7 +12,7 @@
 ## Assembly 
 
 - [ ] Add comments to assembly code. 
-- [ ] Implement visitor patter to carry register allocation, instruction modification, etc. 
+- [x] Implement visitor patter to carry register allocation, instruction modification, etc. 
 
 ## CLI 
 
@@ -20,4 +25,4 @@
 
 ## End-to-end
 
-- [ ] Implement End-to-end test suite that check correctness of the gcc compiler output.
+- [ ] Implement End-to-end test suite that check correctness of the `gcc` compiler output.

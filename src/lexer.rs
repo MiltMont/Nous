@@ -61,4 +61,32 @@ pub enum Token {
     /// Remainder
     #[token("%")]
     Remainder,
+
+    // Logical and relational operators.
+    #[token("!")]
+    Not,
+
+    #[token("&&")]
+    And,
+
+    #[token("||")]
+    Or,
+
+    #[token("==")]
+    EqualTo,
+
+    #[token("!=")]
+    NotEqualTo,
+
+    #[token("<")]
+    LessThan,
+
+    #[token(">")]
+    GreaterThan,
+
+    #[token("<=")]
+    LessThanOrEq,
+
+    #[token(">=")]
+    GreaterThanOrEq,
 }

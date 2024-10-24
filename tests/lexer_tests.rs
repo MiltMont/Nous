@@ -250,6 +250,36 @@ fn test_bitwise_complement() -> std::io::Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_eqto_op() {
+    let contents = "
+    int main(void) {
+        return !(1 == 1);
+    }
+";
+    let lexer = Token::lexer(contents);
+
+    let expected_tokens = [
+        Token::Int,
+        Token::Identifier(String::from("main")),
+        Token::LParen,
+        Token::Void,
+        Token::RParen,
+        Token::LBrace,
+        Token::Return,
+        Token::Not,
+        Token::LParen,
+        Token::Constant(1),
+        Token::EqualTo,
+        Token::Constant(1),
+        Token::RParen,
+        Token::Semicolon,
+        Token::RBrace,
+    ];
+
+    compare_tokens(lexer, expected_tokens.into());
+}
+
 /// Invalid programs
 #[test]
 #[should_panic(expected = "Unexpected sign")]
