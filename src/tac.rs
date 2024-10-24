@@ -1,6 +1,6 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
-use crate::ast::{self, Identifier};
+use crate::ast::{self, BinaryOperator, Identifier};
 
 /// A three address code program representation.
 #[derive(Debug)]
@@ -106,6 +106,7 @@ pub enum Val {
 pub struct TAC {
     source: ast::Program,
     temp_count: usize,
+    label_count: usize,
     instructions: Vec<Instruction>,
 }
 
@@ -114,6 +115,7 @@ impl TAC {
         Self {
             source,
             temp_count: 0,
+            label_count: 0,
             instructions: Vec::new(),
         }
     }
@@ -169,71 +171,75 @@ impl TAC {
                     let v1 = self.parse_val(*e1);
                     let v2 = self.parse_val(*e2);
 
+                    let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::And));
+
                     self.instructions.append(
                         vec![
                             Instruction::JumpIfZero {
                                 condition: v1,
-                                target: Identifier("false_label".into()),
+                                target: Identifier(temp_label_name.to_string()),
                             },
                             Instruction::JumpIfZero {
                                 condition: v2,
-                                target: Identifier("false_label".into()),
+                                target: Identifier(temp_label_name.to_string()),
                             },
                             Instruction::Copy {
                                 src: Val::Constant(1),
-                                dst: Val::Var(Identifier("result".into())),
+                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
                             },
                             Instruction::Jump {
-                                target: Identifier("end".into()),
+                                target: Identifier(format!("end.{}", self.label_count)),
                             },
-                            Instruction::Label(Identifier("false_label".into())),
+                            Instruction::Label(Identifier(temp_label_name.to_string())),
                             Instruction::Copy {
                                 src: Val::Constant(0),
-                                dst: Val::Var(Identifier("result".into())),
+                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
                             },
-                            Instruction::Label(Identifier("end".into())),
+                            Instruction::Label(Identifier(format!("end.{}", self.label_count))),
                         ]
                         .as_mut(),
                     );
 
-                    Val::Var(Identifier("result".into()))
+                    Val::Var(Identifier(format!("result.{}", self.label_count)))
                 }
 
                 ast::BinaryOperator::Or => {
                     let v1 = self.parse_val(*e1);
                     let v2 = self.parse_val(*e2);
 
+                    let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::Or));
+
                     self.instructions.append(
                         vec![
                             Instruction::JumpIfNotZero {
                                 condition: v1,
-                                target: Identifier("false_label".into()),
+                                target: Identifier(temp_label_name.to_string()),
                             },
                             Instruction::JumpIfNotZero {
                                 condition: v2,
-                                target: Identifier("false_label".into()),
+                                target: Identifier(temp_label_name.to_string()),
                             },
                             // If no jumps are performed then both values
                             // are zero, meaning the result is 0.
                             Instruction::Copy {
                                 src: Val::Constant(0),
-                                dst: Val::Var(Identifier("result".into())),
+                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
                             },
                             Instruction::Jump {
-                                target: Identifier("end".into()),
+                                target: Identifier(format!("end.{}", self.label_count)),
                             },
                             // If we jump to this label then one of the values
                             // is non-zero, meaning the result is 1.
-                            Instruction::Label(Identifier("false_label".into())),
+                            Instruction::Label(Identifier(temp_label_name.to_string())),
                             Instruction::Copy {
                                 src: Val::Constant(1),
-                                dst: Val::Var(Identifier("result".into())),
+                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
                             },
-                            Instruction::Label(Identifier("end".into())),
+                            Instruction::Label(Identifier(format!("end.{}", self.label_count))),
                         ]
                         .as_mut(),
                     );
-                    Val::Var(Identifier("result".into()))
+                    Val::Var(Identifier(format!("result.{}", self.label_count)))
                 }
 
                 _ => {
@@ -256,5 +262,14 @@ impl TAC {
     fn make_temporary_name(&mut self) -> String {
         self.temp_count += 1;
         format!("tmp.{}", self.temp_count)
+    }
+
+    fn make_temporary_label(&mut self, binop: BinaryOperator) -> String {
+        self.label_count += 1;
+        match binop {
+            BinaryOperator::And => format!("and_false.{:?}", self.label_count),
+            BinaryOperator::Or => format!("or_true.{:?}", self.label_count),
+            _ => "Error!!".into(),
+        }
     }
 }
