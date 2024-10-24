@@ -45,6 +45,14 @@ impl<'a> Parser<'a> {
         precedences.insert(&Token::Remainder, 50);
         precedences.insert(&Token::Add, 45);
         precedences.insert(&Token::Negation, 45);
+        precedences.insert(&Token::LessThan, 35);
+        precedences.insert(&Token::LessThanOrEq, 35);
+        precedences.insert(&Token::GreaterThan, 35);
+        precedences.insert(&Token::GreaterThanOrEq, 35);
+        precedences.insert(&Token::EqualTo, 30);
+        precedences.insert(&Token::NotEqualTo, 30);
+        precedences.insert(&Token::And, 10);
+        precedences.insert(&Token::Or, 5);
 
         Self {
             tokens,
@@ -124,8 +132,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Obtains the type of the current
-    /// unary operation
+    /// Matches on the current token, if it is
+    /// a unary operator then it advances the token stream
+    /// and returns the unary operator wrapped in a Result
+    /// variant. Otherwise it returns an error message.
     fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator, String> {
         match self.current_token {
             Token::Negation => {
@@ -138,7 +148,14 @@ impl<'a> Parser<'a> {
 
                 Ok(ast::UnaryOperator::Complement)
             }
-            _ => Err(String::from("Not a unary operator")),
+            Token::Not => {
+                self.next_token();
+                Ok(ast::UnaryOperator::Not)
+            }
+            _ => Err(format!(
+                "Not a unary operator, found {:?}",
+                &self.current_token
+            )),
         }
     }
 
@@ -151,6 +168,14 @@ impl<'a> Parser<'a> {
             Token::Mul => Ok(ast::BinaryOperator::Multiply),
             Token::Div => Ok(ast::BinaryOperator::Divide),
             Token::Remainder => Ok(ast::BinaryOperator::Remainder),
+            Token::LessThan => Ok(ast::BinaryOperator::LessThan),
+            Token::LessThanOrEq => Ok(ast::BinaryOperator::LessOrEqual),
+            Token::GreaterThan => Ok(ast::BinaryOperator::GreaterThan),
+            Token::GreaterThanOrEq => Ok(ast::BinaryOperator::GreaterOrEqual),
+            Token::EqualTo => Ok(ast::BinaryOperator::Equal),
+            Token::NotEqualTo => Ok(ast::BinaryOperator::NotEqual),
+            Token::And => Ok(ast::BinaryOperator::And),
+            Token::Or => Ok(ast::BinaryOperator::Or),
             _ => Err(format!(
                 "Not a binary operator, found {:?}",
                 self.current_token
@@ -207,7 +232,7 @@ impl<'a> Parser<'a> {
         match current {
             Token::Constant(i) => Ok(ast::Expression::Constant(i)),
             // If token is "~" or "-"
-            Token::Negation | Token::BitComp => {
+            Token::Negation | Token::BitComp | Token::Not => {
                 let operator = self.parse_unaryop().expect("Parsing unary operator");
                 let inner_expression = self.parse_factor().expect("Parsing inner expression");
 
@@ -270,7 +295,19 @@ impl<'a> Parser<'a> {
     fn is_binary_operator(&self, token: &Token) -> bool {
         matches!(
             token,
-            Token::Add | Token::Mul | Token::Div | Token::Negation | Token::Remainder
+            Token::Add
+                | Token::Mul
+                | Token::Div
+                | Token::Negation
+                | Token::Remainder
+                | Token::And
+                | Token::Or
+                | Token::EqualTo
+                | Token::NotEqualTo
+                | Token::LessThan
+                | Token::LessThanOrEq
+                | Token::GreaterThan
+                | Token::GreaterThanOrEq
         )
     }
 }

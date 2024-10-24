@@ -332,6 +332,7 @@ impl Assembly {
         match operator {
             ast::UnaryOperator::Negate => UnaryOperator::Neg,
             ast::UnaryOperator::Complement => UnaryOperator::Not,
+            _ => todo!(),
         }
     }
 
@@ -342,6 +343,7 @@ impl Assembly {
             ast::BinaryOperator::Multiply => BinaryOperator::Mult,
             ast::BinaryOperator::Divide => BinaryOperator::Divide,
             ast::BinaryOperator::Remainder => BinaryOperator::Remainder,
+            _ => todo!(),
         }
     }
 
