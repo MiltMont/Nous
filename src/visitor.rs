@@ -12,6 +12,8 @@ pub struct AssemblyPass {
     offset: i64,
 }
 
+// TODO: Document this properly and make documentation tests pass.
+
 /// Visits an instance of an assembly program
 /// and modifies it's instruction array.
 /// Usage:

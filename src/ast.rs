@@ -31,18 +31,6 @@ pub enum Expression {
     Binary(BinaryOperator, Box<Expression>, Box<Expression>),
 }
 
-// impl Debug for Expression {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         match self {
-//             Self::Constant(arg0) => f.debug_tuple("Constant").field(arg0).finish(),
-//             Self::Unary(arg0, arg1) => f.debug_tuple("Unary").field(arg0).field(arg1).finish(),
-//             Self::Binary(arg0, arg1, arg2) => {
-//                 write!(f, "Binary({:?}, \n\t{:?}, {:?})", arg0, arg1, arg2)
-//             }
-//         }
-//     }
-// }
-
 #[derive(PartialEq, Clone)]
 pub enum Statement {
     Return(Expression),

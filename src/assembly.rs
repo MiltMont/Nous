@@ -165,8 +165,7 @@ impl Operand {
         match self {
             Operand::Imm(i) => format!("${}", i),
             Operand::Register(r) => r.format(),
-            // HACK: Pseudo registers are never formated.
-            Operand::Pseudo(_) => todo!(),
+            Operand::Pseudo(_) => panic!("Pseudo registers are never formated"),
             Operand::Stack(s) => format!("-{}(%rbp)", s),
         }
     }
@@ -228,12 +227,11 @@ impl Assembly {
     }
 
     /// Converts an Assembly object into an Assembly Program object.
-    pub fn to_assembly_program(&mut self) -> Program {
+    pub fn to_assembly_program(mut self) -> Program {
         // Parsing the program
         self.parse_program();
 
-        // FIX: Avoid cloning the program.
-        self.program.clone().expect("Returning program")
+        self.program.expect("Should return the processed program")
     }
 
     pub fn parse_program(&mut self) -> Program {

@@ -92,6 +92,8 @@ pub enum Val {
     Var(ast::Identifier),
 }
 
+// TODO: Make documentation test pass.
+
 /// Constructs TAC intermediate representation from an ast
 ///
 /// ```

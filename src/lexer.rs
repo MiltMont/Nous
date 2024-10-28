@@ -5,7 +5,7 @@ use logos::Logos;
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
 pub enum Token {
-    #[regex("[a-zA-Z_]+", |lex| lex.slice().to_owned())]
+    #[regex("[a-zA-Z_]+", |lex| lex.slice().to_string())]
     Identifier(String),
 
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().unwrap())]
