@@ -2,18 +2,6 @@ use std::collections::{HashMap, VecDeque};
 
 use crate::assembly::{Assembly, BinaryOperator, Instruction, Operand, Program, Reg};
 
-/// Visits a program instruction stack
-/// and makes modifications based on information
-/// provided by its Assembly struct.
-pub struct AssemblyPass {
-    program: Program,
-    instructions: Vec<Instruction>,
-    pseudo_registers: HashMap<Operand, i64>,
-    offset: i64,
-}
-
-// TODO: Document this properly and make documentation tests pass.
-
 /// Visits an instance of an assembly program
 /// and modifies it's instruction array.
 /// Usage:
@@ -30,9 +18,12 @@ pub struct AssemblyPass {
 /// let mut parser: Parser = Parser::build(&mut lexer);
 /// let mut tac: TAC = TAC::build(parser.to_ast_program());
 /// let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
+///
 /// // The program must be parsed in order to build
-/// // the visitor.
+/// // the visitor:
+///
 /// assembly.parse_program();
+///
 /// let mut visitor = AssemblyPass::build(assembly);
 /// visitor.replace_pseudo_registers();
 ///
@@ -43,8 +34,15 @@ pub struct AssemblyPass {
 ///
 /// // A custom message can be passed:
 ///
-/// visitor.print_instructions(Some("Testing"));
+/// visitor.print_instructions(Some("Printing instructions"));
 /// ```
+pub struct AssemblyPass {
+    program: Program,
+    instructions: Vec<Instruction>,
+    pseudo_registers: HashMap<Operand, i64>,
+    offset: i64,
+}
+
 impl AssemblyPass {
     /// Tries to construct an AssemblyPass visitor
     /// given an Assembly instance. In order to do so, the
