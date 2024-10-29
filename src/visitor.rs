@@ -19,11 +19,31 @@ pub struct AssemblyPass {
 /// Usage:
 ///
 /// ```
-/// let mut program = assembly.to_assembly_program();
-/// let mut visitor = AssemblyPass::new(program);
-/// visitor.replace_pseudo_registers()
-/// println!("{:?}", visitor.instructions);
+/// # use nous::parser::Parser;
+/// # use logos::Logos;
+/// # use nous::lexer::Token;
+/// # use nous::tac::TAC;
+/// # use nous::assembly::Assembly;
+/// # use nous::visitor::AssemblyPass;
+/// # let file = String::from("int main(void) { return 2; }");
+/// let mut lexer = Token::lexer(&file);
+/// let mut parser: Parser = Parser::build(&mut lexer);
+/// let mut tac: TAC = TAC::build(parser.to_ast_program());
+/// let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
+/// // The program must be parsed in order to build
+/// // the visitor.
+/// assembly.parse_program();
+/// let mut visitor = AssemblyPass::build(assembly);
+/// visitor.replace_pseudo_registers();
 ///
+/// // Printing modified instructions can be done by
+/// // calling:
+///
+/// visitor.print_instructions(None);
+///
+/// // A custom message can be passed:
+///
+/// visitor.print_instructions(Some("Testing"));
 /// ```
 impl AssemblyPass {
     /// Tries to construct an AssemblyPass visitor

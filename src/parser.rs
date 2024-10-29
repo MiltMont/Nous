@@ -6,7 +6,12 @@ use crate::{ast, lexer::Token};
 
 /// Turns a stream of Tokens into a Parser object.
 /// ```
-/// let mut lexer = Token::Lexer(&file);
+/// # use nous::parser::Parser;
+/// # use logos::Logos;
+/// # use nous::lexer::Token;
+/// # use nous::ast;
+/// # let file = String::from("int main(void) { return 2; }");
+/// let mut lexer = Token::lexer(&file);
 /// let mut parser : Parser = Parser::build(&mut lexer);
 /// // Creating an ast object
 /// let ast_program : ast::Program = parser.to_ast_program();

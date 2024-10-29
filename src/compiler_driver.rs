@@ -3,45 +3,44 @@ use crate::lexer::Token;
 use crate::parser::Parser;
 use crate::tac::TAC;
 use crate::visitor::AssemblyPass;
-use clap::Parser as ClapParser;
+use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-#[derive(ClapParser, Debug, Clone)]
-#[command(version, about, long_about = None)]
+#[derive(ClapParser)]
+#[clap(author, version, about)]
 pub struct CompilerDriver {
     /// Path of the C program.
-    #[arg(short, long)]
+    #[clap(short = 'f', long)]
     file: PathBuf,
 
+    #[command(subcommand)]
+    cmd: Commands,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
     /// Directs preprocessor to run the lexer,
     /// but stop before parsing.
-    #[arg(long)]
-    lex: bool,
-
+    Lex,
     /// Directs preprocessor to run the lexer and parser,
     /// but stop before assembly generation.
-    #[arg(long)]
-    parse: bool,
-
+    Parse,
     /// Directs preprocessor to run lexing, parsing, and
     /// assembly generation, but stop before code
     /// emission.
-    #[arg(long)]
-    codegen: bool,
-
+    CodeGen,
     /// Directs preprocessor to run everything up to (and including)
     /// TAC generation.
-    #[arg(long)]
-    tac: bool,
-
-    #[arg(long)]
-    emitcode: bool,
+    Tac,
+    /// Directs preprocessor to run everything up to (and including)
+    /// Assembly code generation.
+    EmitCode { phase: String },
 }
-
+#[allow(dead_code)]
 impl CompilerDriver {
     pub fn build() -> CompilerDriver {
         CompilerDriver::parse()
@@ -278,35 +277,18 @@ impl CompilerDriver {
             Err("Failed parsing file, no such file".to_string())
         }
     }
+
     pub fn run(self) -> Result<(), String> {
-        if self.lex {
-            self.lex_file()?;
-            return Ok(());
+        match self.cmd {
+            Commands::Lex => self.lex_file()?,
+            Commands::Parse => self.parse_file()?,
+            Commands::CodeGen => self.code_gen()?,
+            Commands::Tac => self.tac_gen()?,
+            Commands::EmitCode { phase: _ } => self.emit_code()?,
         }
-
-        if self.parse {
-            self.parse_file()?;
-            return Ok(());
-        }
-
-        if self.codegen {
-            self.code_gen()?;
-            return Ok(());
-        }
-
-        if self.tac {
-            self.tac_gen()?;
-            return Ok(());
-        }
-
-        if self.emitcode {
-            self.emit_code()?;
-            return Ok(());
-        }
-
-        self.preprocess_file()?;
-        self.compile_preproc_file()?;
-        //self.assemble_file()?;
+        // self.preprocess_file()?;
+        // self.compile_preproc_file()?;
+        // //self.assemble_file()?;
 
         Ok(())
     }

@@ -195,6 +195,12 @@ impl Reg {
 /// It is indended to be used as follows:
 ///
 /// ```
+/// # use nous::parser::Parser;
+/// # use logos::Logos;
+/// # use nous::lexer::Token;
+/// # use nous::tac::TAC;
+/// # use nous::assembly::Assembly;
+/// # let file = String::from("int main(void) { return 2; }");
 /// let mut lexer = Token::lexer(&file);
 /// let mut parser: Parser = Parser::build(&mut lexer);
 /// let mut tac: TAC = TAC::build(parser.to_ast_program());
@@ -205,6 +211,18 @@ impl Reg {
 /// by calling `.to_assembly_program()`
 ///
 /// ```
+///
+/// # use nous::parser::Parser;
+/// # use logos::Logos;
+/// # use nous::lexer::Token;
+/// # use nous::tac::TAC;
+/// # use nous::assembly::Assembly;
+/// # use nous::assembly;
+/// # let file = String::from("int main(void) { return 2; }");
+/// # let mut lexer = Token::lexer(&file);
+/// # let mut parser: Parser = Parser::build(&mut lexer);
+/// # let mut tac: TAC = TAC::build(parser.to_ast_program());
+/// # let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
 /// let mut assembly_program: assembly::Program = assembly.to_assembly_program();
 /// ```
 ///
