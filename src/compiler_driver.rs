@@ -248,6 +248,9 @@ impl CompilerDriver {
             visitor.print_instructions(Some("Rewriting move instructions"));
             visitor.rewrite_binop();
             visitor.print_instructions(Some("Rewriting binary operators"));
+            visitor.rewrite_cmp();
+            visitor.print_instructions(Some("Rewriting cmp operators"));
+
             Ok(())
         } else {
             Err("Failed parsing file, no such file".to_string())
@@ -268,6 +271,7 @@ impl CompilerDriver {
                 .replace_pseudo_registers()
                 .rewrite_mov()
                 .rewrite_binop()
+                .rewrite_cmp()
                 .allocate_stack();
 
             let assembly_program = visitor.modify_program();

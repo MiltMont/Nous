@@ -75,16 +75,6 @@ pub enum Instruction {
     Label(Identifier),
 }
 
-#[derive(Clone, Debug)]
-pub enum CondCode {
-    E,
-    NE,
-    G,
-    GE,
-    L,
-    LE,
-}
-
 impl Instruction {
     #[allow(unused_variables)]
     pub fn format(&self) -> String {
@@ -105,7 +95,13 @@ impl Instruction {
             ),
             Instruction::Idiv(operand) => format!("idivl\t{}", operand.format()),
             Instruction::Cdq => "cdq".to_string(),
-            _ => todo!(),
+            Instruction::Cmp(op1, op2) => format!("cmpl\t{}, {}", op1.format(), op2.format()),
+            Instruction::Jmp(label) => format!("jmp\t.L{:?}", label),
+            Instruction::JumpCC(cond, label) => format!("j{}\t.L{:?}", cond.format(), label),
+            Instruction::SetCC(cond, operand) => {
+                format!("set{}\t{}", cond.format(), operand.format())
+            }
+            Instruction::Label(label) => format!(".L{:?}", label),
         }
     }
 }
@@ -134,6 +130,29 @@ impl Debug for Instruction {
             Self::JumpCC(cond, id) => f.debug_tuple("\n\tJumpCC").field(cond).field(id).finish(),
             Self::SetCC(cond, op) => f.debug_tuple("\n\tSetCC").field(cond).field(op).finish(),
             Self::Label(id) => f.debug_tuple("\n\tLabel").field(id).finish(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum CondCode {
+    E,
+    NE,
+    G,
+    GE,
+    L,
+    LE,
+}
+
+impl CondCode {
+    pub fn format(&self) -> String {
+        match self {
+            CondCode::E => "e".into(),
+            CondCode::NE => "ne".into(),
+            CondCode::L => "l".into(),
+            CondCode::LE => "le".into(),
+            CondCode::G => "g".into(),
+            CondCode::GE => "ge".into(),
         }
     }
 }
