@@ -384,7 +384,7 @@ impl Assembly {
                 | ast::BinaryOperator::GreaterThan
                 | ast::BinaryOperator::GreaterOrEqual => {
                     vec![
-                        Instruction::Cmp(self.parse_operand(&src_1), self.parse_operand(&src_2)),
+                        Instruction::Cmp(self.parse_operand(&src_2), self.parse_operand(&src_1)),
                         Instruction::Mov {
                             src: Operand::Imm(0),
                             dst: self.parse_operand(&dst),
