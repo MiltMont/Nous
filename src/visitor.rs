@@ -99,6 +99,7 @@ impl AssemblyPass {
             Instruction::Cdq => Instruction::Cdq,
             Instruction::AllocateStack(i) => Instruction::AllocateStack(*i),
             Instruction::Ret => Instruction::Ret,
+            _ => todo!(),
         }
     }
 

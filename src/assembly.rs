@@ -129,6 +129,7 @@ impl Debug for Instruction {
                 .field(src)
                 .field(dst)
                 .finish(),
+            _ => todo!(),
         }
     }
 }
