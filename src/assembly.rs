@@ -1,8 +1,8 @@
 use std::{collections::HashMap, env, fmt::Debug};
 
 use crate::{
-    ast::{self},
-    tac::{self},
+    ast::{self, Identifier},
+    tac,
 };
 
 #[derive(Clone)]
@@ -68,6 +68,21 @@ pub enum Instruction {
     Cdq,
     AllocateStack(i64),
     Ret,
+    Cmp(Operand, Operand),
+    Jmp(Identifier),
+    JumpCC(CondCode, Identifier),
+    SetCC(CondCode, Operand),
+    Label(Identifier),
+}
+
+#[derive(Clone)]
+pub enum CondCode {
+    E,
+    NE,
+    G,
+    GE,
+    L,
+    LE,
 }
 
 impl Instruction {
@@ -90,6 +105,7 @@ impl Instruction {
             ),
             Instruction::Idiv(operand) => format!("idivl\t{}", operand.format()),
             Instruction::Cdq => "cdq".to_string(),
+            _ => todo!(),
         }
     }
 }
