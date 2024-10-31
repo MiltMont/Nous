@@ -99,7 +99,13 @@ impl AssemblyPass {
             Instruction::Cdq => Instruction::Cdq,
             Instruction::AllocateStack(i) => Instruction::AllocateStack(*i),
             Instruction::Ret => Instruction::Ret,
-            _ => todo!(),
+            Instruction::Cmp(op1, op2) => {
+                Instruction::Cmp(self.get_stack_value(op1), self.get_stack_value(op2))
+            }
+            Instruction::SetCC(cond, operand) => {
+                Instruction::SetCC(cond.clone(), self.get_stack_value(operand))
+            }
+            i => i.clone(),
         }
     }
 
@@ -139,6 +145,39 @@ impl AssemblyPass {
                 _ => new_instructions.push(instruction.clone()),
             }
         }
+        self.instructions = new_instructions;
+        self
+    }
+
+    /// The `cmp` instruction can't use memory addresses for
+    /// both operands, also the second operand of a `cmp`
+    /// instruction can't be a constant either.
+    pub fn rewrite_cmp(&mut self) -> &mut Self {
+        let mut new_instructions: Vec<Instruction> = Vec::new();
+
+        for instruction in &self.instructions {
+            if let Instruction::Cmp(a, b) = instruction {
+                if matches!(a, Operand::Stack(_)) && matches!(b, Operand::Stack(_)) {
+                    new_instructions.push(Instruction::Mov {
+                        src: a.clone(),
+                        dst: Operand::Register(Reg::R10),
+                    });
+                    new_instructions.push(Instruction::Mov {
+                        src: Operand::Register(Reg::R10),
+                        dst: b.clone(),
+                    });
+                } else if matches!(b, Operand::Imm(_)) {
+                    new_instructions.push(Instruction::Mov {
+                        src: b.clone(),
+                        dst: Operand::Register(Reg::R11),
+                    });
+                    new_instructions.push(Instruction::Cmp(a.clone(), Operand::Register(Reg::R11)));
+                }
+            } else {
+                new_instructions.push(instruction.clone());
+            }
+        }
+
         self.instructions = new_instructions;
         self
     }
@@ -235,7 +274,7 @@ impl AssemblyPass {
 
     /// Replaces the instruction set on
     /// the original program and returns
-    /// the modified instance.
+    /// the modified instance*.
     pub fn modify_program(&mut self) -> Program {
         self.program.0.instructions = self.instructions.clone();
 
