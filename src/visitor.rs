@@ -59,15 +59,6 @@ impl AssemblyPass {
         } else {
             panic!("The program must exists in order to create the AssemblyPass instance. Try parsing the program fist.")
         }
-        // // Takes ownership of the assembly program and clones
-        // // its instruction set.
-        // let instructions: Vec<Instruction> = program.0.instructions.clone();
-        // Self {
-        //     program,
-        //     instructions,
-        //     pseudo_registers,
-        //     offset,
-        // }
     }
 
     pub fn print_instructions(&self, debug_info: Option<&str>) {

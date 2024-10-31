@@ -285,7 +285,7 @@ impl CompilerDriver {
             Commands::Parse => self.parse_file()?,
             Commands::CodeGen => self.code_gen()?,
             Commands::Tac => self.tac_gen()?,
-            Commands::EmitCode { phase: _ } => self.emit_code()?,
+            Commands::EmitCode => self.emit_code()?,
         }
         // self.preprocess_file()?;
         // self.compile_preproc_file()?;

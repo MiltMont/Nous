@@ -138,7 +138,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Matches on the current token, if it is
-    /// a unary operator then it advances the token stream
+    /// a unary operator then *it advances the token stream*
     /// and returns the unary operator wrapped in a Result
     /// variant. Otherwise it returns an error message.
     fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator, String> {
