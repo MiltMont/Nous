@@ -38,8 +38,9 @@ enum Commands {
     Tac,
     /// Directs preprocessor to run everything up to (and including)
     /// Assembly code generation.
-    EmitCode { phase: String },
+    EmitCode,
 }
+
 #[allow(dead_code)]
 impl CompilerDriver {
     pub fn build() -> CompilerDriver {
