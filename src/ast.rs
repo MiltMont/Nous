@@ -9,6 +9,7 @@ pub enum BinaryOperator {
     Remainder,
     And,
     Or,
+    // Relational operators
     Equal,
     NotEqual,
     LessThan,

@@ -53,7 +53,7 @@ impl Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Function(\n\t\tname: {:?} \n\t\tinstructions: \n\t\t{:?}\n\t)",
+            "Function(\n\t\tname: {:?} \n\t\tinstructions: \n\t\t{:#?}\n\t)",
             &self.name.0, &self.instructions
         )
     }
@@ -75,7 +75,7 @@ pub enum Instruction {
     Label(Identifier),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum CondCode {
     E,
     NE,
@@ -129,7 +129,11 @@ impl Debug for Instruction {
                 .field(src)
                 .field(dst)
                 .finish(),
-            _ => todo!(),
+            Self::Cmp(op1, op2) => f.debug_tuple("\n\tCmp").field(op1).field(op2).finish(),
+            Self::Jmp(id) => f.debug_tuple("\n\tJmp").field(id).finish(),
+            Self::JumpCC(cond, id) => f.debug_tuple("\n\tJumpCC").field(cond).field(id).finish(),
+            Self::SetCC(cond, op) => f.debug_tuple("\n\tSetCC").field(cond).field(op).finish(),
+            Self::Label(id) => f.debug_tuple("\n\tLabel").field(id).finish(),
         }
     }
 }
@@ -301,6 +305,16 @@ impl Assembly {
                 ]
             }
             tac::Instruction::Unary { operator, src, dst } => {
+                if matches!(operator, ast::UnaryOperator::Not) {
+                    return vec![
+                        Instruction::Cmp(Operand::Imm(0), self.parse_operand(&src)),
+                        Instruction::Mov {
+                            src: Operand::Imm(0),
+                            dst: self.parse_operand(&dst),
+                        },
+                        Instruction::SetCC(CondCode::E, self.parse_operand(&dst)),
+                    ];
+                }
                 vec![
                     Instruction::Mov {
                         src: self.parse_operand(&src),
@@ -344,6 +358,24 @@ impl Assembly {
                         dst: self.parse_operand(&dst),
                     },
                 ],
+                ast::BinaryOperator::Equal
+                | ast::BinaryOperator::NotEqual
+                | ast::BinaryOperator::LessThan
+                | ast::BinaryOperator::LessOrEqual
+                | ast::BinaryOperator::GreaterThan
+                | ast::BinaryOperator::GreaterOrEqual => {
+                    vec![
+                        Instruction::Cmp(self.parse_operand(&src_1), self.parse_operand(&src_2)),
+                        Instruction::Mov {
+                            src: Operand::Imm(0),
+                            dst: self.parse_operand(&dst),
+                        },
+                        Instruction::SetCC(
+                            self.parse_relational_operator(&binary_operator),
+                            self.parse_operand(&dst),
+                        ),
+                    ]
+                }
                 _ => {
                     vec![
                         Instruction::Mov {
@@ -358,10 +390,38 @@ impl Assembly {
                     ]
                 }
             },
-            _ => todo!(),
+            tac::Instruction::Jump { target } => vec![Instruction::Jmp(target)],
+            tac::Instruction::JumpIfZero { condition, target } => {
+                vec![
+                    Instruction::Cmp(Operand::Imm(0), self.parse_operand(&condition)),
+                    Instruction::JumpCC(CondCode::E, target),
+                ]
+            }
+            tac::Instruction::JumpIfNotZero { condition, target } => {
+                vec![
+                    Instruction::Cmp(Operand::Imm(0), self.parse_operand(&condition)),
+                    Instruction::JumpCC(CondCode::NE, target),
+                ]
+            }
+            tac::Instruction::Copy { src, dst } => vec![Instruction::Mov {
+                src: self.parse_operand(&src),
+                dst: self.parse_operand(&dst),
+            }],
+            tac::Instruction::Label(id) => vec![Instruction::Label(id)],
         }
     }
 
+    fn parse_relational_operator(&self, binary_operator: &ast::BinaryOperator) -> CondCode {
+        match binary_operator {
+            ast::BinaryOperator::Equal => CondCode::E,
+            ast::BinaryOperator::NotEqual => CondCode::NE,
+            ast::BinaryOperator::LessThan => CondCode::L,
+            ast::BinaryOperator::LessOrEqual => CondCode::LE,
+            ast::BinaryOperator::GreaterThan => CondCode::G,
+            ast::BinaryOperator::GreaterOrEqual => CondCode::GE,
+            _ => panic!("Not a relational operator, found {:?}", binary_operator),
+        }
+    }
     fn parse_unary_operator(&self, operator: ast::UnaryOperator) -> UnaryOperator {
         match operator {
             ast::UnaryOperator::Negate => UnaryOperator::Neg,
