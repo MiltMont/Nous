@@ -1,4 +1,9 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    fs::{self, File},
+    io::Read,
+    path::PathBuf,
+};
 
 use logos::{Lexer, Logos};
 
@@ -43,6 +48,14 @@ impl From<String> for Parser {
             peek_token,
             precedences: Parser::get_precedence_map(),
         }
+    }
+}
+
+impl From<PathBuf> for Parser {
+    fn from(value: PathBuf) -> Self {
+        let file = fs::read_to_string(value).expect("Should read file");
+
+        Parser::from(file)
     }
 }
 

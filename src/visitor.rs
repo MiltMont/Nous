@@ -7,10 +7,6 @@ use crate::assembly::{Assembly, BinaryOperator, Instruction, Operand, Program, R
 /// Usage:
 ///
 /// ```
-/// # use nous::parser::Parser;
-/// # use logos::Logos;
-/// # use nous::lexer::Token;
-/// # use nous::tac::TAC;
 /// # use nous::assembly::Assembly;
 /// # use nous::visitor::AssemblyPass;
 /// let file = String::from("int main(void) { return 2; }");
