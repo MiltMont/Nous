@@ -8,7 +8,7 @@ use nous::{
 fn test_return_2() -> std::io::Result<()> {
     let file = read_file("tests/files/valid/return_2.c")?;
 
-    let mut parser = Parser::from_file(&file);
+    let mut parser = Parser::from(file);
 
     let test = Program(Function {
         name: Identifier("main".to_owned()),

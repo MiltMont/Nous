@@ -13,11 +13,8 @@ use crate::assembly::{Assembly, BinaryOperator, Instruction, Operand, Program, R
 /// # use nous::tac::TAC;
 /// # use nous::assembly::Assembly;
 /// # use nous::visitor::AssemblyPass;
-/// # let file = String::from("int main(void) { return 2; }");
-/// let mut lexer = Token::lexer(&file);
-/// let mut parser: Parser = Parser::build(&mut lexer);
-/// let mut tac: TAC = TAC::build(parser.to_ast_program());
-/// let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
+/// let file = String::from("int main(void) { return 2; }");
+/// let mut assembly: Assembly = Assembly::from(file);
 ///
 /// // The program must be parsed in order to build
 /// // the visitor:

@@ -262,9 +262,9 @@ impl Reg {
 /// # use nous::assembly::Assembly;
 /// # let file = String::from("int main(void) { return 2; }");
 /// let mut lexer = Token::lexer(&file);
-/// let mut parser: Parser = Parser::build(&mut lexer);
-/// let mut tac: TAC = TAC::build(parser.to_ast_program());
-/// let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
+/// let mut parser: Parser = Parser::from_lexer(&mut lexer);
+/// let mut tac: TAC = TAC::from(&mut parser);
+/// let mut assembly: Assembly = Assembly::from(&mut tac);
 /// ```
 ///
 /// You can obtain an assembly program representation
@@ -278,11 +278,8 @@ impl Reg {
 /// # use nous::tac::TAC;
 /// # use nous::assembly::Assembly;
 /// # use nous::assembly;
-/// # let file = String::from("int main(void) { return 2; }");
-/// # let mut lexer = Token::lexer(&file);
-/// # let mut parser: Parser = Parser::build(&mut lexer);
-/// # let mut tac: TAC = TAC::build(parser.to_ast_program());
-/// # let mut assembly: Assembly = Assembly::new(tac.to_tac_program());
+/// let file = String::from("int main(void) { return 2; }");
+/// let mut assembly: Assembly = Assembly::from(file);
 /// let mut assembly_program: assembly::Program = assembly.to_assembly_program();
 /// ```
 ///
@@ -293,39 +290,33 @@ pub struct Assembly {
     pub offset: i64,
 }
 
+impl From<String> for Assembly {
+    fn from(value: String) -> Self {
+        let source = TAC::from(value).to_tac_program();
+
+        Self {
+            source,
+            program: None,
+            pseudo_registers: HashMap::new(),
+            offset: 0,
+        }
+    }
+}
+
+impl From<&mut TAC> for Assembly {
+    fn from(value: &mut TAC) -> Self {
+        let source = value.to_tac_program();
+
+        Self {
+            source,
+            program: None,
+            pseudo_registers: HashMap::new(),
+            offset: 0,
+        }
+    }
+}
+
 impl Assembly {
-    /// Creates an Assembly object.
-    pub fn new(tac_program: tac::Program) -> Self {
-        Self {
-            source: tac_program,
-            program: None,
-            pseudo_registers: HashMap::new(),
-            offset: 0,
-        }
-    }
-
-    pub fn from_tac(tac: &mut TAC) -> Self {
-        let source = tac.to_tac_program();
-
-        Self {
-            source,
-            program: None,
-            pseudo_registers: HashMap::new(),
-            offset: 0,
-        }
-    }
-
-    pub fn from_file(file: &str) -> Self {
-        let source = TAC::from_file(file).to_tac_program();
-
-        Self {
-            source,
-            program: None,
-            pseudo_registers: HashMap::new(),
-            offset: 0,
-        }
-    }
-
     /// Converts an Assembly object into an Assembly Program object.
     pub fn to_assembly_program(mut self) -> Program {
         // Parsing the program

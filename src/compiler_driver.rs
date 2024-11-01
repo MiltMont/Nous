@@ -95,7 +95,7 @@ impl CompilerDriver {
             // Basic compiler implementation
             let path = preproc_file.clone().into_os_string().into_string().unwrap();
             let file = fs::read_to_string(path).expect("Unable to read file");
-            let mut assembly = Assembly::from_file(&file);
+            let mut assembly = Assembly::from(file);
             // Parsing the assembly program.
             assembly.parse_program();
             // Realizing the assembly passes.
@@ -199,7 +199,7 @@ impl CompilerDriver {
     fn parse_file(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
-            let mut parser = Parser::from_file(&file);
+            let mut parser = Parser::from(file);
 
             println!("{:?}", parser.to_ast_program());
 
@@ -214,7 +214,7 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file");
 
-            let mut tac = TAC::from_file(&file);
+            let mut tac = TAC::from(file);
             println!("{:?}", tac.to_tac_program());
 
             Ok(())
@@ -226,7 +226,7 @@ impl CompilerDriver {
     fn code_gen(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
-            let mut assembly = Assembly::from_file(&file);
+            let mut assembly = Assembly::from(file);
             // Parsing the program
             assembly.parse_program();
 
@@ -252,7 +252,7 @@ impl CompilerDriver {
     fn emit_code(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Reading file");
-            let mut assembly = Assembly::from_file(&file);
+            let mut assembly = Assembly::from(file);
             assembly.parse_program();
             let mut visitor = AssemblyPass::build(assembly);
             visitor

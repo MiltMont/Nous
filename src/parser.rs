@@ -12,7 +12,7 @@ use crate::{ast, lexer::Token};
 /// # use nous::ast;
 /// # let file = String::from("int main(void) { return 2; }");
 /// let mut lexer = Token::lexer(&file);
-/// let mut parser : Parser = Parser::build(&mut lexer);
+/// let mut parser : Parser = Parser::from_lexer(&mut lexer);
 /// // Creating an ast object
 /// let ast_program : ast::Program = parser.to_ast_program();
 /// ```
@@ -28,34 +28,10 @@ pub struct Parser {
     precedences: HashMap<Token, usize>,
 }
 
-impl Parser {
-    //
-    // TODO: Document which functions consume the current
-    // token in the token stream.
-    //
-
-    /// Returns a Parser given a Lexer.
-    /// TODO: Remove this function.
-    pub fn build(lexer: &mut Lexer<Token>) -> Self {
-        let mut tokens: VecDeque<Token> =
-            VecDeque::from_iter(lexer.into_iter().map(|x| x.expect("Building token queue")));
-
-        let current_token = tokens.pop_front().unwrap();
-        let peek_token = tokens.pop_front().unwrap();
-
-        Self {
-            tokens,
-            current_token,
-            peek_token,
-            precedences: Parser::get_precedence_map(),
-        }
-    }
-
-    /// Given a `&str` containing a `.c` program,
-    /// this returns a parser.
-    pub fn from_file(file: &str) -> Self {
+impl From<String> for Parser {
+    fn from(value: String) -> Self {
         let mut tokens: VecDeque<Token> = VecDeque::from_iter(
-            Token::lexer(file).map(|token| token.expect("Should return token")),
+            Token::lexer(&value).map(|token| token.expect("Should return token")),
         );
 
         let current_token = tokens.pop_front().unwrap();
@@ -68,6 +44,13 @@ impl Parser {
             precedences: Parser::get_precedence_map(),
         }
     }
+}
+
+impl Parser {
+    //
+    // TODO: Document which functions consume the current
+    // token in the token stream.
+    //
 
     /// Returns a Parser given a lexer.
     pub fn from_lexer(lexer: &mut Lexer<Token>) -> Self {
@@ -84,6 +67,7 @@ impl Parser {
             precedences: Parser::get_precedence_map(),
         }
     }
+
     pub fn get_precedence_map() -> HashMap<Token, usize> {
         let mut precedences = HashMap::new();
 

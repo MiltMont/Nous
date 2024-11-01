@@ -106,8 +106,8 @@ pub enum Val {
 /// # let file = String::from("int main(void) { return 2; }");
 ///
 /// let mut lexer = Token::lexer(&file);
-/// let mut parser = Parser::build(&mut lexer);
-/// let mut tac = TAC::build(parser.to_ast_program());
+/// let mut parser = Parser::from_lexer(&mut lexer);
+/// let mut tac = TAC::from(&mut parser);
 ///
 /// // Creating a tac program
 /// let tac_program = tac.to_tac_program();
@@ -120,37 +120,32 @@ pub struct TAC {
     instructions: Vec<Instruction>,
 }
 
+impl From<String> for TAC {
+    fn from(value: String) -> Self {
+        let source = Parser::from(value).to_ast_program();
+        Self {
+            source,
+            temp_count: 0,
+            label_count: 0,
+            instructions: Vec::new(),
+        }
+    }
+}
+
+impl From<&mut Parser> for TAC {
+    fn from(value: &mut Parser) -> Self {
+        let source = value.to_ast_program();
+
+        Self {
+            source,
+            temp_count: 0,
+            label_count: 0,
+            instructions: Vec::new(),
+        }
+    }
+}
+
 impl TAC {
-    pub fn build(source: ast::Program) -> Self {
-        Self {
-            source,
-            temp_count: 0,
-            label_count: 0,
-            instructions: Vec::new(),
-        }
-    }
-
-    pub fn from_parser(parser: &mut Parser) -> Self {
-        let source = parser.to_ast_program();
-
-        Self {
-            source,
-            temp_count: 0,
-            label_count: 0,
-            instructions: Vec::new(),
-        }
-    }
-
-    pub fn from_file(file: &str) -> Self {
-        let source = Parser::from_file(file).to_ast_program();
-        Self {
-            source,
-            temp_count: 0,
-            label_count: 0,
-            instructions: Vec::new(),
-        }
-    }
-
     pub fn to_tac_program(&mut self) -> Program {
         self.parse_program()
     }
