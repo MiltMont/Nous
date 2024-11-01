@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use logos::Lexer;
+use logos::{Lexer, Logos};
 
 use crate::{ast, lexer::Token};
 
@@ -16,7 +16,7 @@ use crate::{ast, lexer::Token};
 /// // Creating an ast object
 /// let ast_program : ast::Program = parser.to_ast_program();
 /// ```
-pub struct Parser<'a> {
+pub struct Parser {
     /// Queue of tokens
     tokens: VecDeque<Token>,
     /// Current token in token stream
@@ -25,16 +25,17 @@ pub struct Parser<'a> {
     peek_token: Token,
 
     /// Map of operator precedences
-    precedences: HashMap<&'a Token, i64>,
+    precedences: HashMap<Token, usize>,
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     //
     // TODO: Document which functions consume the current
     // token in the token stream.
     //
 
     /// Returns a Parser given a Lexer.
+    /// TODO: Remove this function.
     pub fn build(lexer: &mut Lexer<Token>) -> Self {
         let mut tokens: VecDeque<Token> =
             VecDeque::from_iter(lexer.into_iter().map(|x| x.expect("Building token queue")));
@@ -42,29 +43,66 @@ impl<'a> Parser<'a> {
         let current_token = tokens.pop_front().unwrap();
         let peek_token = tokens.pop_front().unwrap();
 
-        let mut precedences = HashMap::new();
+        Self {
+            tokens,
+            current_token,
+            peek_token,
+            precedences: Parser::get_precedence_map(),
+        }
+    }
 
-        // Defining the precedence values.
-        precedences.insert(&Token::Mul, 50);
-        precedences.insert(&Token::Div, 50);
-        precedences.insert(&Token::Remainder, 50);
-        precedences.insert(&Token::Add, 45);
-        precedences.insert(&Token::Negation, 45);
-        precedences.insert(&Token::LessThan, 35);
-        precedences.insert(&Token::LessThanOrEq, 35);
-        precedences.insert(&Token::GreaterThan, 35);
-        precedences.insert(&Token::GreaterThanOrEq, 35);
-        precedences.insert(&Token::EqualTo, 30);
-        precedences.insert(&Token::NotEqualTo, 30);
-        precedences.insert(&Token::And, 10);
-        precedences.insert(&Token::Or, 5);
+    /// Given a `&str` containing a `.c` program,
+    /// this returns a parser.
+    pub fn from_file(source: &'static str) -> Self {
+        let mut tokens: VecDeque<Token> = VecDeque::from_iter(
+            Token::lexer(source).map(|token| token.expect("Should return token")),
+        );
+
+        let current_token = tokens.pop_front().unwrap();
+        let peek_token = tokens.pop_front().unwrap();
 
         Self {
             tokens,
             current_token,
             peek_token,
-            precedences,
+            precedences: Parser::get_precedence_map(),
         }
+    }
+
+    /// Returns a Parser given a lexer.
+    pub fn from_lexer(lexer: &mut Lexer<Token>) -> Self {
+        let mut tokens: VecDeque<Token> =
+            VecDeque::from_iter(lexer.into_iter().map(|x| x.expect("Building token queue")));
+
+        let current_token = tokens.pop_front().unwrap();
+        let peek_token = tokens.pop_front().unwrap();
+
+        Self {
+            tokens,
+            current_token,
+            peek_token,
+            precedences: Parser::get_precedence_map(),
+        }
+    }
+    pub fn get_precedence_map() -> HashMap<Token, usize> {
+        let mut precedences = HashMap::new();
+
+        // Defining the precedence values.
+        precedences.insert(Token::Mul, 50);
+        precedences.insert(Token::Div, 50);
+        precedences.insert(Token::Remainder, 50);
+        precedences.insert(Token::Add, 45);
+        precedences.insert(Token::Negation, 45);
+        precedences.insert(Token::LessThan, 35);
+        precedences.insert(Token::LessThanOrEq, 35);
+        precedences.insert(Token::GreaterThan, 35);
+        precedences.insert(Token::GreaterThanOrEq, 35);
+        precedences.insert(Token::EqualTo, 30);
+        precedences.insert(Token::NotEqualTo, 30);
+        precedences.insert(Token::And, 10);
+        precedences.insert(Token::Or, 5);
+
+        precedences
     }
 
     /// Generates and AST from the constructed parser.
@@ -206,7 +244,7 @@ impl<'a> Parser<'a> {
     /// Parses the grammar:
     ///
     /// <exp> ::== <factor> | <exp> <binop> <exp>
-    fn parse_expression(&mut self, min_precedence: i64) -> Result<ast::Expression, String> {
+    fn parse_expression(&mut self, min_precedence: usize) -> Result<ast::Expression, String> {
         let mut left = self.parse_factor().expect("Parsing left factor");
 
         let mut next_token = self.peek_token.clone();
@@ -284,7 +322,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Returns the precedence of a given operator.
-    fn get_precedence(&self, binary_operator: &Token) -> Result<i64, String> {
+    fn get_precedence(&self, binary_operator: &Token) -> Result<usize, String> {
         if let Some(i) = self.precedences.get(binary_operator) {
             Ok(*i)
         } else {

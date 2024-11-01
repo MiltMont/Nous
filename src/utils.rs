@@ -16,7 +16,7 @@ pub fn read_file(path: &str) -> std::io::Result<String> {
     Ok(contents)
 }
 
-pub fn parser_from_file(path: &str) -> Parser<'static> {
+pub fn parser_from_file(path: &str) -> Parser {
     Parser::build(&mut Token::lexer(&read_file(path).unwrap()))
 }
 
