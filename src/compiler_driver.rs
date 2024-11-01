@@ -211,9 +211,7 @@ impl CompilerDriver {
     /// Output the three adress code intermediate representation.
     fn tac_gen(&self) -> Result<(), String> {
         if self.file.exists() {
-            let file = fs::read_to_string(&self.file).expect("Unable to read file");
-
-            let mut tac = TAC::from(file);
+            let mut tac = TAC::from(self.file.clone());
             println!("{:?}", tac.to_tac_program());
 
             Ok(())

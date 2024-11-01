@@ -1,4 +1,4 @@
-use std::{fmt::Debug, rc::Rc};
+use std::{fmt::Debug, fs, path::PathBuf, rc::Rc};
 
 use crate::{
     ast::{self, BinaryOperator, Identifier},
@@ -142,6 +142,14 @@ impl From<&mut Parser> for TAC {
             label_count: 0,
             instructions: Vec::new(),
         }
+    }
+}
+
+impl From<PathBuf> for TAC {
+    fn from(value: PathBuf) -> Self {
+        let file = fs::read_to_string(value).expect("Should read file");
+
+        Self::from(file)
     }
 }
 
