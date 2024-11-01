@@ -2,7 +2,7 @@ use std::{collections::HashMap, env, fmt::Debug};
 
 use crate::{
     ast::{self, Identifier},
-    tac,
+    tac::{self, TAC},
 };
 
 #[derive(Clone)]
@@ -298,6 +298,28 @@ impl Assembly {
     pub fn new(tac_program: tac::Program) -> Self {
         Self {
             source: tac_program,
+            program: None,
+            pseudo_registers: HashMap::new(),
+            offset: 0,
+        }
+    }
+
+    pub fn from_tac(tac: &mut TAC) -> Self {
+        let source = tac.to_tac_program();
+
+        Self {
+            source,
+            program: None,
+            pseudo_registers: HashMap::new(),
+            offset: 0,
+        }
+    }
+
+    pub fn from_file(file: &'static str) -> Self {
+        let source = TAC::from_file(file).to_tac_program();
+
+        Self {
+            source,
             program: None,
             pseudo_registers: HashMap::new(),
             offset: 0,
