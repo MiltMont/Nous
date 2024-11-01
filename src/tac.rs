@@ -149,7 +149,7 @@ impl From<PathBuf> for TAC {
     fn from(value: PathBuf) -> Self {
         let file = fs::read_to_string(value).expect("Should read file");
 
-        Self::from(file)
+        TAC::from(file)
     }
 }
 

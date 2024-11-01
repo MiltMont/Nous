@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, fmt::Debug};
+use std::{collections::HashMap, env, fmt::Debug, fs, path::PathBuf};
 
 use crate::{
     ast::{self, Identifier},
@@ -313,6 +313,14 @@ impl From<&mut TAC> for Assembly {
             pseudo_registers: HashMap::new(),
             offset: 0,
         }
+    }
+}
+
+impl From<PathBuf> for Assembly {
+    fn from(value: PathBuf) -> Self {
+        let file = fs::read_to_string(value).expect("Should read file");
+
+        Assembly::from(file)
     }
 }
 
