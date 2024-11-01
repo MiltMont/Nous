@@ -99,7 +99,8 @@ impl Instruction {
             Instruction::Jmp(label) => format!("jmp\t.L{:?}", label),
             Instruction::JumpCC(cond, label) => format!("j{}\t.L{:?}", cond.format(), label),
             Instruction::SetCC(cond, operand) => {
-                format!("set{}\t{}", cond.format(), operand.format())
+                // Add a parameter to this call to format within SetCC
+                format!("set{}\t{}", cond.format(), operand.format_inside_setcc())
             }
             Instruction::Label(label) => format!(".L{:?}", label),
         }
@@ -201,10 +202,20 @@ pub enum Operand {
 }
 
 impl Operand {
+    /// Takes an extra parameter, `within_setcc`.
     fn format(&self) -> String {
         match self {
             Operand::Imm(i) => format!("${}", i),
             Operand::Register(r) => r.format(),
+            Operand::Pseudo(_) => panic!("Pseudo registers are never formated"),
+            Operand::Stack(s) => format!("-{}(%rbp)", s),
+        }
+    }
+
+    fn format_inside_setcc(&self) -> String {
+        match self {
+            Operand::Imm(i) => format!("${}", i),
+            Operand::Register(r) => r.format_inside_setcc(),
             Operand::Pseudo(_) => panic!("Pseudo registers are never formated"),
             Operand::Stack(s) => format!("-{}(%rbp)", s),
         }
@@ -226,6 +237,15 @@ impl Reg {
             Reg::R10 => "%r10d".to_string(),
             Reg::DX => "%edx".to_string(),
             Reg::R11 => "%r11d".to_string(),
+        }
+    }
+
+    pub fn format_inside_setcc(&self) -> String {
+        match self {
+            Reg::AX => "%al".into(),
+            Reg::DX => "%dl".into(),
+            Reg::R10 => "%r10b".into(),
+            Reg::R11 => "%r11b".into(),
         }
     }
 }

@@ -172,6 +172,8 @@ impl AssemblyPass {
                         dst: Operand::Register(Reg::R11),
                     });
                     new_instructions.push(Instruction::Cmp(a.clone(), Operand::Register(Reg::R11)));
+                } else {
+                    new_instructions.push(instruction.clone())
                 }
             } else {
                 new_instructions.push(instruction.clone());
