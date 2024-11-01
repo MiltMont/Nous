@@ -1,11 +1,8 @@
+use crate::{parser::Parser, tac::TAC};
 use std::{
     fs::File,
     io::{prelude::*, BufReader},
 };
-
-use logos::Logos;
-
-use crate::{lexer::Token, parser::Parser, tac::TAC};
 
 pub fn read_file(path: &str) -> std::io::Result<String> {
     let file = File::open(path)?;
@@ -16,11 +13,12 @@ pub fn read_file(path: &str) -> std::io::Result<String> {
     Ok(contents)
 }
 
-pub fn parser_from_file(path: &str) -> Parser {
-    Parser::build(&mut Token::lexer(&read_file(path).unwrap()))
+pub fn parser_from_path(path: &str) -> Parser {
+    let file = read_file(path).expect("Should return the file");
+    Parser::from_file(&file)
 }
 
-pub fn tac_from_file(path: &str) -> TAC {
-    let mut parser = parser_from_file(path);
+pub fn tac_from_path(path: &str) -> TAC {
+    let mut parser = parser_from_path(path);
     TAC::build(parser.to_ast_program())
 }

@@ -1,17 +1,14 @@
-use logos::Logos;
 use nous::{
     ast::{Expression, Function, Identifier, Program, Statement},
-    lexer::Token,
     parser::Parser,
     utils::read_file,
 };
 
 #[test]
 fn test_return_2() -> std::io::Result<()> {
-    let source = read_file("tests/files/valid/return_2.c")?;
+    let file = read_file("tests/files/valid/return_2.c")?;
 
-    let mut lexer = Token::lexer(&source);
-    let mut parser = Parser::build(&mut lexer);
+    let mut parser = Parser::from_file(&file);
 
     let test = Program(Function {
         name: Identifier("main".to_owned()),

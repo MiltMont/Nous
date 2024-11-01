@@ -1,12 +1,12 @@
 use nous::{
     ast::{BinaryOperator, Identifier},
     tac::{Instruction, Val},
-    utils::tac_from_file,
+    utils::tac_from_path,
 };
 
 #[test]
 fn test_binary_op() {
-    let mut tac = tac_from_file("tests/files/nested_binaryop.c");
+    let mut tac = tac_from_path("tests/files/nested_binaryop.c");
     let program = tac.to_tac_program();
 
     let expected_instructions = vec![

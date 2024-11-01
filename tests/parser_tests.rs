@@ -1,12 +1,11 @@
 use nous::{
     ast::{BinaryOperator, Expression, Function, Identifier, Program, UnaryOperator},
-    parser::Parser,
-    utils::parser_from_file,
+    utils::parser_from_path,
 };
 // Testing unary operators
 #[test]
 fn test_unary() {
-    let mut parser = parser_from_file("playground/test_unary.c");
+    let mut parser = parser_from_path("playground/test_unary.c");
     let expected_expression = Expression::Unary(
         UnaryOperator::Negate,
         Box::new(Expression::Unary(
@@ -26,7 +25,7 @@ fn test_unary() {
 // Testing binary operators
 #[test]
 fn test_same_precedence() {
-    let mut parser = parser_from_file("tests/files/nested_binaryop.c");
+    let mut parser = parser_from_path("tests/files/nested_binaryop.c");
     let expected_expression = Expression::Binary(
         BinaryOperator::Subtract,
         Box::new(Expression::Binary(
@@ -51,7 +50,7 @@ fn test_same_precedence() {
 
 #[test]
 fn test_different_precedences() {
-    let mut parser = parser_from_file("tests/files/binary_precedences.c");
+    let mut parser = parser_from_path("tests/files/binary_precedences.c");
 
     let expected_expression = Expression::Binary(
         BinaryOperator::Subtract,
