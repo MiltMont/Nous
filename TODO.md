@@ -26,3 +26,4 @@
 ## End-to-end
 
 - [ ] Implement End-to-end test suite that check correctness of the `gcc` compiler output.
+- [ ] Make `quick_compile` work on `test_logical2.c`.
