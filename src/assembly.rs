@@ -315,7 +315,7 @@ impl Assembly {
         }
     }
 
-    pub fn from_file(file: &'static str) -> Self {
+    pub fn from_file(file: &str) -> Self {
         let source = TAC::from_file(file).to_tac_program();
 
         Self {

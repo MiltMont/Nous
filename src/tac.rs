@@ -141,7 +141,7 @@ impl TAC {
         }
     }
 
-    pub fn from_file(file: &'static str) -> Self {
+    pub fn from_file(file: &str) -> Self {
         let source = Parser::from_file(file).to_ast_program();
         Self {
             source,

@@ -53,7 +53,7 @@ impl Parser {
 
     /// Given a `&str` containing a `.c` program,
     /// this returns a parser.
-    pub fn from_file(file: &'static str) -> Self {
+    pub fn from_file(file: &str) -> Self {
         let mut tokens: VecDeque<Token> = VecDeque::from_iter(
             Token::lexer(file).map(|token| token.expect("Should return token")),
         );

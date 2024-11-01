@@ -95,10 +95,7 @@ impl CompilerDriver {
             // Basic compiler implementation
             let path = preproc_file.clone().into_os_string().into_string().unwrap();
             let file = fs::read_to_string(path).expect("Unable to read file");
-            let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer);
-            let mut tac = TAC::build(parser.to_ast_program());
-            let mut assembly = Assembly::new(tac.to_tac_program());
+            let mut assembly = Assembly::from_file(&file);
             // Parsing the assembly program.
             assembly.parse_program();
             // Realizing the assembly passes.
@@ -189,7 +186,7 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
             let lexer = Token::lexer(&file);
-            let tokens: Vec<Token> = lexer.clone().map(|x| x.unwrap()).collect();
+            let tokens: Vec<Token> = Vec::from_iter(lexer.clone().map(|x| x.unwrap()));
             println!("{:?}", lexer);
             println!("{:?}", tokens);
             Ok(())
@@ -202,8 +199,7 @@ impl CompilerDriver {
     fn parse_file(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
-            let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer);
+            let mut parser = Parser::from_file(&file);
 
             println!("{:?}", parser.to_ast_program());
 
@@ -218,9 +214,7 @@ impl CompilerDriver {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file");
 
-            let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer);
-            let mut tac = TAC::build(parser.to_ast_program());
+            let mut tac = TAC::from_file(&file);
             println!("{:?}", tac.to_tac_program());
 
             Ok(())
@@ -232,10 +226,7 @@ impl CompilerDriver {
     fn code_gen(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Unable to read file.");
-            let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer);
-            let mut tac = TAC::build(parser.to_ast_program());
-            let mut assembly = Assembly::new(tac.to_tac_program());
+            let mut assembly = Assembly::from_file(&file);
             // Parsing the program
             assembly.parse_program();
 
@@ -261,10 +252,7 @@ impl CompilerDriver {
     fn emit_code(&self) -> Result<(), String> {
         if self.file.exists() {
             let file = fs::read_to_string(&self.file).expect("Reading file");
-            let mut lexer = Token::lexer(&file);
-            let mut parser = Parser::build(&mut lexer);
-            let mut tac = TAC::build(parser.to_ast_program());
-            let mut assembly = Assembly::new(tac.to_tac_program());
+            let mut assembly = Assembly::from_file(&file);
             assembly.parse_program();
             let mut visitor = AssemblyPass::build(assembly);
             visitor
