@@ -8,6 +8,7 @@
 ## Parser
 
 - [x] Fix errors when compiling expressions containing nested unary operators. (`~(-(3))`) 
+- [ ] Use `thiserror` and `miette` to display better errors
 
 ## Assembly 
 
