@@ -1,6 +1,9 @@
 use std::{fmt::Debug, rc::Rc};
 
-use crate::ast::{self, BinaryOperator, Identifier};
+use crate::{
+    ast::{self, BinaryOperator, Identifier},
+    parser::Parser,
+};
 
 /// A three address code program representation.
 #[derive(Debug)]
@@ -119,6 +122,27 @@ pub struct TAC {
 
 impl TAC {
     pub fn build(source: ast::Program) -> Self {
+        Self {
+            source,
+            temp_count: 0,
+            label_count: 0,
+            instructions: Vec::new(),
+        }
+    }
+
+    pub fn from_parser(parser: &mut Parser) -> Self {
+        let source = parser.to_ast_program();
+
+        Self {
+            source,
+            temp_count: 0,
+            label_count: 0,
+            instructions: Vec::new(),
+        }
+    }
+
+    pub fn from_file(file: &'static str) -> Self {
+        let source = Parser::from_file(file).to_ast_program();
         Self {
             source,
             temp_count: 0,
