@@ -9,6 +9,12 @@ use crate::{
 #[derive(Debug)]
 pub struct Program(pub Function);
 
+impl From<&mut TAC> for Program {
+    fn from(value: &mut TAC) -> Self {
+        value.to_tac_program()
+    }
+}
+
 #[derive(Clone)]
 pub struct Function {
     pub identifier: ast::Identifier,
