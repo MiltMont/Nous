@@ -1,6 +1,6 @@
-use std::fmt::Debug;
-
+use crate::errors::Result;
 use crate::parser::Parser;
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
@@ -81,8 +81,8 @@ impl Debug for Program {
     }
 }
 
-impl From<&mut Parser> for Program {
+impl From<&mut Parser> for Result<Program> {
     fn from(value: &mut Parser) -> Self {
-        value.to_ast_program()
+        Ok(value.to_ast_program()?)
     }
 }

@@ -6,3 +6,4 @@ pub mod parser;
 pub mod tac;
 pub mod utils;
 pub mod visitor;
+pub mod errors; 

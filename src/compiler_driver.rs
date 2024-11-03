@@ -1,9 +1,9 @@
 use crate::assembly::Assembly;
 use crate::lexer::Token;
 use crate::parser::Parser;
+use crate::tac;
 use crate::tac::TAC;
 use crate::visitor::AssemblyPass;
-use crate::{ast, tac};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use std::fs::{self, File};
@@ -208,8 +208,8 @@ impl CompilerDriver {
     fn parse_file(&self) -> Result<(), String> {
         if self.file_path.exists() {
             let mut parser = Parser::from(self.file_path.clone());
-            let ast_program: ast::Program = (&mut parser).into();
-            println!("{:?}", ast_program);
+            //let ast_program: ast::Program = (&mut parser).into();
+            println!("{:?}", parser.to_ast_program());
 
             Ok(())
         } else {

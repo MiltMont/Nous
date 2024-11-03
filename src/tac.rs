@@ -128,7 +128,7 @@ pub struct TAC {
 
 impl From<String> for TAC {
     fn from(value: String) -> Self {
-        let source = Parser::from(value).to_ast_program();
+        let source = Parser::from(value).to_ast_program().expect("XD");
         Self {
             source,
             temp_count: 0,
@@ -140,7 +140,7 @@ impl From<String> for TAC {
 
 impl From<&mut Parser> for TAC {
     fn from(value: &mut Parser) -> Self {
-        let source = value.to_ast_program();
+        let source = value.to_ast_program().expect("SOmething");
 
         Self {
             source,

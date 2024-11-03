@@ -1,3 +1,4 @@
+use core::panic;
 use std::{
     collections::{HashMap, VecDeque},
     fs::{self},
@@ -6,7 +7,11 @@ use std::{
 
 use logos::{Lexer, Logos};
 
-use crate::{ast, lexer::Token};
+use crate::{
+    ast,
+    errors::{Error, Result},
+    lexer::Token,
+};
 
 /// Turns a stream of Tokens into a Parser object.
 /// ```
@@ -102,8 +107,8 @@ impl Parser {
     }
 
     /// Generates and AST from the constructed parser.
-    pub fn to_ast_program(&mut self) -> ast::Program {
-        self.parse_program().expect("Parser: Parsing program.")
+    pub fn to_ast_program(&mut self) -> Result<ast::Program> {
+        self.parse_program()
     }
 
     /// Consumes the next token in token stream
@@ -128,7 +133,7 @@ impl Parser {
     /// Returns an AST Program or an Error string.
     ///
     /// <program> ::== <function>
-    fn parse_program(&mut self) -> Result<ast::Program, String> {
+    fn parse_program(&mut self) -> Result<ast::Program> {
         let function = self.parse_function()?;
         Ok(ast::Program(function))
     }
@@ -136,7 +141,7 @@ impl Parser {
     /// Returns an ast::Function or an Error String.
     ///
     /// <function> ::== "int" <identifier> "(" "void" ")" "{" <statement> "}"
-    fn parse_function(&mut self) -> Result<ast::Function, String> {
+    fn parse_function(&mut self) -> Result<ast::Function> {
         if self.current_token_is(&Token::Int) {
             self.next_token();
 
@@ -146,10 +151,11 @@ impl Parser {
             // Check if incoming token stream matches the expected_structure
             for token in expected_structure {
                 if !self.current_token_is(&token) {
-                    return Err(format!(
-                        "Expected {:?}, got {:?}",
-                        token, self.current_token
-                    ));
+                    return Err(Error::UnexpectedToken {
+                        expected: token.clone(),
+                        found: self.current_token.clone(),
+                        message: "within `parse_function`".into(),
+                    });
                 } else {
                     self.next_token();
                 }
@@ -164,10 +170,18 @@ impl Parser {
                     body: statement,
                 })
             } else {
-                Err(format!("Expected }} but found {:?}", self.current_token))
+                Err(Error::UnexpectedToken {
+                    expected: Token::RBrace,
+                    found: self.current_token.clone(),
+                    message: todo!(),
+                })
             }
         } else {
-            Err(format!("Expected int but found {:?}", self.current_token))
+            Err(Error::UnexpectedToken {
+                expected: Token::Int,
+                found: self.current_token.clone(),
+                message: todo!(),
+            })
         }
     }
 
@@ -175,7 +189,7 @@ impl Parser {
     /// a unary operator then *it advances the token stream*
     /// and returns the unary operator wrapped in a Result
     /// variant. Otherwise it returns an error message.
-    fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator, String> {
+    fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator> {
         match self.current_token {
             Token::Negation => {
                 self.next_token();
@@ -191,16 +205,15 @@ impl Parser {
                 self.next_token();
                 Ok(ast::UnaryOperator::Not)
             }
-            _ => Err(format!(
-                "Not a unary operator, found {:?}",
-                &self.current_token
-            )),
+            _ => Err(Error::NotUnop {
+                found: self.current_token.clone(),
+            }),
         }
     }
 
     /// Obtains the variant of the current
     /// binary operation
-    fn parse_binaryop(&mut self) -> Result<ast::BinaryOperator, String> {
+    fn parse_binaryop(&mut self) -> Result<ast::BinaryOperator> {
         match self.current_token {
             Token::Add => Ok(ast::BinaryOperator::Add),
             Token::Negation => Ok(ast::BinaryOperator::Subtract),
@@ -215,48 +228,43 @@ impl Parser {
             Token::NotEqualTo => Ok(ast::BinaryOperator::NotEqual),
             Token::And => Ok(ast::BinaryOperator::And),
             Token::Or => Ok(ast::BinaryOperator::Or),
-            _ => Err(format!(
-                "Not a binary operator, found {:?}",
-                self.current_token
-            )),
+            _ => Err(Error::NotBinop {
+                found: self.current_token.clone(),
+            }),
         }
     }
 
     /// Returns an ast::Identifier or an Error String.
     ///
     /// <identifier> ::== An identifier token
-    fn parse_identifier(&mut self) -> Result<ast::Identifier, String> {
+    fn parse_identifier(&mut self) -> Result<ast::Identifier> {
         if let Token::Identifier(s) = self.current_token.clone() {
             self.next_token();
             Ok(ast::Identifier(s.to_string()))
         } else {
-            Err(format!(
-                "Error parsing identifier, got {:?}",
-                self.current_token
-            ))
+            Err(Error::UnexpectedToken {
+                expected: Token::Identifier("identifier name".into()),
+                found: self.current_token.clone(),
+                message: todo!(),
+            })
         }
     }
 
     /// Parses the grammar:
     ///
     /// <exp> ::== <factor> | <exp> <binop> <exp>
-    fn parse_expression(&mut self, min_precedence: usize) -> Result<ast::Expression, String> {
-        let mut left = self.parse_factor().expect("Parsing left factor");
+    fn parse_expression(&mut self, min_precedence: usize) -> Result<ast::Expression> {
+        let mut left = self.parse_factor()?;
 
         let mut next_token = self.peek_token.clone();
 
         while self.is_binary_operator(&next_token)
-            && self
-                .get_precedence(&next_token)
-                .expect("Getting precedence of peek token")
-                >= min_precedence
+            && self.get_precedence(&next_token)? >= min_precedence
         {
             self.next_token();
-            let operator = self.parse_binaryop().expect("Parsing binary operator");
+            let operator = self.parse_binaryop()?;
             self.next_token();
-            let right = self
-                .parse_expression(self.get_precedence(&next_token).unwrap() + 1)
-                .expect("Parsing right expression");
+            let right = self.parse_expression(self.get_precedence(&next_token)? + 1)?;
             left = ast::Expression::Binary(operator, Box::new(left), Box::new(right));
 
             next_token = self.peek_token.clone()
@@ -266,14 +274,14 @@ impl Parser {
     }
 
     /// <factor> ::== <int> | <unop> <factor> | "(" <exp> ")"
-    fn parse_factor(&mut self) -> Result<ast::Expression, String> {
+    fn parse_factor(&mut self) -> Result<ast::Expression> {
         let current = self.current_token.clone();
         match current {
             Token::Constant(i) => Ok(ast::Expression::Constant(i)),
             // If token is "~" or "-"
             Token::Negation | Token::BitComp | Token::Not => {
-                let operator = self.parse_unaryop().expect("Parsing unary operator");
-                let inner_expression = self.parse_factor().expect("Parsing inner expression");
+                let operator = self.parse_unaryop()?;
+                let inner_expression = self.parse_factor()?;
 
                 Ok(ast::Expression::Unary(operator, Box::new(inner_expression)))
             }
@@ -284,19 +292,23 @@ impl Parser {
                 if self.current_token_is(&Token::RParen) {
                     inner_expression
                 } else {
-                    Err(String::from(
-                        "Malformed factor, missing closing parenthesis",
-                    ))
+                    Err(Error::MalformedFactor {
+                        missing: Some(Token::RParen),
+                        found: self.current_token.clone(),
+                    })
                 }
             }
-            _ => Err(format!("Malformed factor, found {:?}", self.current_token)),
+            _ => Err(Error::MalformedFactor {
+                missing: None,
+                found: self.current_token.clone(),
+            }),
         }
     }
 
     /// Parses the following grammar:
     ///
     /// <statement> ::== "return" <exp> ";"
-    fn parse_statement(&mut self) -> Result<ast::Statement, String> {
+    fn parse_statement(&mut self) -> Result<ast::Statement> {
         if self.current_token_is(&Token::Return) {
             self.next_token();
 
@@ -307,25 +319,29 @@ impl Parser {
                 self.next_token();
                 Ok(ast::Statement::Return(expression))
             } else {
-                Err(format!("Expected ; but found {:?}", self.current_token))
+                Err(Error::UnexpectedToken {
+                    expected: Token::Semicolon,
+                    found: self.current_token.clone(),
+                    message: todo!(),
+                })
             }
         } else {
-            Err(format!(
-                "Expected RETURN but found {:?}",
-                self.current_token
-            ))
+            Err(Error::UnexpectedToken {
+                expected: Token::Return,
+                found: self.current_token.clone(),
+                message: todo!(),
+            })
         }
     }
 
     /// Returns the precedence of a given operator.
-    fn get_precedence(&self, binary_operator: &Token) -> Result<usize, String> {
+    fn get_precedence(&self, binary_operator: &Token) -> Result<usize> {
         if let Some(i) = self.precedences.get(binary_operator) {
             Ok(*i)
         } else {
-            Err(format!(
-                "Token {:?} not present in precedences table",
-                binary_operator
-            ))
+            Err(Error::Precedence {
+                found: binary_operator.clone(),
+            })
         }
     }
 
