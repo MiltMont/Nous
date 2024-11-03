@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use crate::parser::Parser;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
     Add,
@@ -76,5 +78,11 @@ pub struct Program(pub Function);
 impl Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Program(\n\t{:?}\n)", &self.0)
+    }
+}
+
+impl From<&mut Parser> for Program {
+    fn from(value: &mut Parser) -> Self {
+        value.to_ast_program()
     }
 }
