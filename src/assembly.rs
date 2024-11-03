@@ -21,6 +21,12 @@ impl Program {
     }
 }
 
+impl From<&mut Assembly> for Program {
+    fn from(value: &mut Assembly) -> Self {
+        value.to_assembly_program()
+    }
+}
+
 impl Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //f.debug_tuple("AssemblyProgram").field(&self.0).finish()
@@ -326,11 +332,13 @@ impl From<PathBuf> for Assembly {
 
 impl Assembly {
     /// Converts an Assembly object into an Assembly Program object.
-    pub fn to_assembly_program(mut self) -> Program {
+    pub fn to_assembly_program(&mut self) -> Program {
         // Parsing the program
         self.parse_program();
 
-        self.program.expect("Should return the processed program")
+        self.program
+            .clone()
+            .expect("Should return the processed program")
     }
 
     pub fn parse_program(&mut self) -> Program {
