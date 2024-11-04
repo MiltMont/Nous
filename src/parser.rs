@@ -22,7 +22,7 @@ use crate::{
 /// let mut lexer = Token::lexer(&file);
 /// let mut parser : Parser = Parser::from_lexer(&mut lexer);
 /// // Creating an ast object
-/// let ast_program : ast::Program = parser.to_ast_program();
+/// let ast_program : ast::Program = parser.to_ast_program().expect("Should return a program");
 /// ```
 pub struct Parser {
     /// Queue of tokens
