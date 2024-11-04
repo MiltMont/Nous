@@ -15,7 +15,7 @@ fn test_return_2() -> std::io::Result<()> {
         body: Statement::Return(Expression::Constant(2)),
     });
 
-    let program = parser.to_ast_program();
+    let program = parser.to_ast_program().unwrap();
 
     assert_eq!(program, test);
 

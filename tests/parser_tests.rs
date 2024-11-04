@@ -19,7 +19,7 @@ fn test_unary() {
         body: nous::ast::Statement::Return(expected_expression),
     });
 
-    assert_eq!(parser.to_ast_program(), expected_program)
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program)
 }
 
 // Testing binary operators
@@ -45,7 +45,7 @@ fn test_same_precedence() {
         body: nous::ast::Statement::Return(expected_expression),
     });
 
-    assert_eq!(parser.to_ast_program(), expected_program);
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program);
 }
 
 #[test]
@@ -71,5 +71,5 @@ fn test_different_precedences() {
         body: nous::ast::Statement::Return(expected_expression),
     });
 
-    assert_eq!(parser.to_ast_program(), expected_program)
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program)
 }
