@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cargo run -- --file $1 emit-code >$2
+cargo run -- -f $1 emit-code >$2
 
 gcc $2 -o $3
 

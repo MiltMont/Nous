@@ -102,13 +102,13 @@ impl Instruction {
             Instruction::Idiv(operand) => format!("idivl\t{}", operand.format()),
             Instruction::Cdq => "cdq".to_string(),
             Instruction::Cmp(op1, op2) => format!("cmpl\t{}, {}", op1.format(), op2.format()),
-            Instruction::Jmp(label) => format!("jmp\t.L{:?}", label),
-            Instruction::JumpCC(cond, label) => format!("j{}\t.L{:?}", cond.format(), label),
+            Instruction::Jmp(label) => format!("jmp\t.L_{}", label.0),
+            Instruction::JumpCC(cond, label) => format!("j{}\t.L_{}", cond.format(), label.0),
             Instruction::SetCC(cond, operand) => {
                 // Add a parameter to this call to format within SetCC
                 format!("set{}\t{}", cond.format(), operand.format_inside_setcc())
             }
-            Instruction::Label(label) => format!(".L{:?}", label),
+            Instruction::Label(label) => format!(".L_{}:", label.0),
         }
     }
 }
