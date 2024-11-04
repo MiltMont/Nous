@@ -77,7 +77,10 @@ impl CompilerDriver {
             //     "The file {} does not exists",
             //     self.file_path.display()
             // ))
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "No such file",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
         }
     }
 
@@ -155,7 +158,10 @@ impl CompilerDriver {
             // ))
             //
             //
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "No such file",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
         }
     }
 
@@ -193,7 +199,10 @@ impl CompilerDriver {
             //     "Assembly file {} doesnt exist.",
             //     assembly_file.display()
             // ))
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Assembly file doesnt exist.",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
         }
     }
 
@@ -207,7 +216,10 @@ impl CompilerDriver {
             println!("{:?}", tokens);
             Ok(())
         } else {
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed lexing file, no such file",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
             // Err("Failed lexing file, no such file".to_string())
         }
     }
@@ -223,7 +235,10 @@ impl CompilerDriver {
             Ok(())
         } else {
             // Err("Failed parsing file, no such file".to_string())
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed parsing file, no such file",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
         }
     }
 
@@ -236,7 +251,10 @@ impl CompilerDriver {
 
             Ok(())
         } else {
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed TAC generation, no such file",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
             // Err("Failed finding file, no such file".to_string())
         }
     }
@@ -261,7 +279,10 @@ impl CompilerDriver {
 
             Ok(())
         } else {
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed code generation, no such file",
+            )))?
+            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
             // Err("Failed parsing file, no such file".to_string())
         }
     }
@@ -285,7 +306,9 @@ impl CompilerDriver {
             Ok(())
         } else {
             // Err("Failed parsing file, no such file".to_string())
-            Err(crate::errors::Error::IoError(io::Error::last_os_error()))?
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed code emission, no such file",
+            )))?
         }
     }
 

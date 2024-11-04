@@ -32,6 +32,6 @@ pub enum Error {
     NotUnop { found: Token },
 
     /// Io errors
-    #[diagnostic(code(my_lib::io_error))]
+    #[diagnostic()]
     IoError(#[from] std::io::Error),
 }
