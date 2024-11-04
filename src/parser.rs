@@ -1,4 +1,3 @@
-use core::panic;
 use std::{
     collections::{HashMap, VecDeque},
     fs::{self},
@@ -154,7 +153,7 @@ impl Parser {
                     return Err(Error::UnexpectedToken {
                         expected: token.clone(),
                         found: self.current_token.clone(),
-                        message: "within `parse_function`".into(),
+                        message: Some("within `parse_function`".into()),
                     });
                 } else {
                     self.next_token();
@@ -173,14 +172,14 @@ impl Parser {
                 Err(Error::UnexpectedToken {
                     expected: Token::RBrace,
                     found: self.current_token.clone(),
-                    message: todo!(),
+                    message: None,
                 })
             }
         } else {
             Err(Error::UnexpectedToken {
                 expected: Token::Int,
                 found: self.current_token.clone(),
-                message: todo!(),
+                message: None,
             })
         }
     }
@@ -245,7 +244,7 @@ impl Parser {
             Err(Error::UnexpectedToken {
                 expected: Token::Identifier("identifier name".into()),
                 found: self.current_token.clone(),
-                message: todo!(),
+                message: None,
             })
         }
     }
@@ -322,14 +321,14 @@ impl Parser {
                 Err(Error::UnexpectedToken {
                     expected: Token::Semicolon,
                     found: self.current_token.clone(),
-                    message: todo!(),
+                    message: None,
                 })
             }
         } else {
             Err(Error::UnexpectedToken {
                 expected: Token::Return,
                 found: self.current_token.clone(),
-                message: todo!(),
+                message: None,
             })
         }
     }

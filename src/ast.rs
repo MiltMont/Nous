@@ -83,6 +83,6 @@ impl Debug for Program {
 
 impl From<&mut Parser> for Result<Program> {
     fn from(value: &mut Parser) -> Self {
-        Ok(value.to_ast_program()?)
+        value.to_ast_program()
     }
 }
