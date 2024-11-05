@@ -189,6 +189,7 @@ impl TAC {
 
                 Instruction::Return(val)
             }
+            _ => todo!(),
         }
     }
 
@@ -296,6 +297,7 @@ impl TAC {
                     dst
                 }
             },
+            _ => todo!(),
         }
     }
 

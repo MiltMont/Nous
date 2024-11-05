@@ -3,6 +3,14 @@ use crate::parser::Parser;
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+/// A declaration consists of a name
+/// and an optional initializer expression.
+pub struct Declaration {
+    name: Identifier,
+    initializer: Option<Expression>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
     Add,
     Subtract,
@@ -27,22 +35,34 @@ pub enum UnaryOperator {
     Not,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expression {
     Constant(i64),
+    /// This holds a variable name
+    Var(Identifier),
     Unary(UnaryOperator, Box<Expression>),
     Binary(BinaryOperator, Box<Expression>, Box<Expression>),
+    /// Consists of the lvalue beign updated and the expression
+    /// we're assigning to that lvalue.
+    Assignment(Box<Expression>, Box<Expression>),
 }
 
 #[derive(PartialEq, Clone)]
 pub enum Statement {
     Return(Expression),
+    /// Takes an expression node.
+    Expression(Expression),
+    /// Represents null statements, which are expression
+    /// statements without the expression.
+    Null,
 }
 
 impl Debug for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Return(arg0) => write!(f, "Return(\n{:#?} \n\t\t)", arg0),
+            Self::Null => write!(f, "Null"),
+            Self::Expression(e) => write!(f, "Expression(\n{:#?}\n\t)", e),
         }
     }
 }
