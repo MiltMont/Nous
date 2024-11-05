@@ -48,7 +48,11 @@ impl Function {
         );
 
         for instruction in &self.instructions {
-            result.push_str(&format!("\t{}\n", instruction.format()));
+            if matches!(instruction, Instruction::Label(_)) {
+                result.push_str(&format!("{}\n", instruction.format()));
+            } else {
+                result.push_str(&format!("\t{}\n", instruction.format()));
+            }
         }
 
         result
