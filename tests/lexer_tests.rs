@@ -280,6 +280,35 @@ fn test_eqto_op() {
     compare_tokens(lexer, expected_tokens.into());
 }
 
+#[test]
+fn test_assign() {
+    let source = "
+    int main(void) {
+        int a = 2;
+        return a;
+}
+";
+    let lexer = Token::lexer(source);
+    let expected = [
+        Token::Int,
+        Token::Identifier("main".into()),
+        Token::LParen,
+        Token::Void,
+        Token::RParen,
+        Token::LBrace,
+        Token::Int,
+        Token::Identifier("a".into()),
+        Token::Assign,
+        Token::Constant(2),
+        Token::Semicolon,
+        Token::Return,
+        Token::Identifier("a".into()),
+        Token::Semicolon,
+        Token::RBrace,
+    ];
+
+    compare_tokens(lexer, expected.into());
+}
 /// Invalid programs
 #[test]
 #[should_panic(expected = "Unexpected sign")]

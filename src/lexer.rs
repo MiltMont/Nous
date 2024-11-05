@@ -89,4 +89,8 @@ pub enum Token {
 
     #[token(">=")]
     GreaterThanOrEq,
+
+    /// Assignment operator
+    #[token("=")]
+    Assign,
 }
