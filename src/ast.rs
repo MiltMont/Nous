@@ -3,6 +3,14 @@ use crate::parser::Parser;
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub enum BlockItem {
+    S(Statement),
+    D(Declaration),
+}
+
+pub type BlockItems = Vec<BlockItem>;
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// A declaration consists of a name
 /// and an optional initializer expression.
 pub struct Declaration {
@@ -47,7 +55,7 @@ pub enum Expression {
     Assignment(Box<Expression>, Box<Expression>),
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum Statement {
     Return(Expression),
     /// Takes an expression node.
@@ -79,7 +87,7 @@ impl Debug for Identifier {
 #[derive(PartialEq, Clone)]
 pub struct Function {
     pub name: Identifier,
-    pub body: Statement,
+    pub body: BlockItems,
 }
 
 impl Debug for Function {
