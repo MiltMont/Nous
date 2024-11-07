@@ -7,7 +7,7 @@ use std::{
 use logos::{Lexer, Logos};
 
 use crate::{
-    ast,
+    ast::{self, BlockItems},
     errors::{Error, Result},
     lexer::Token,
 };
@@ -160,13 +160,18 @@ impl Parser {
                 }
             }
 
-            let statement = self.parse_statement()?;
+            let mut function_body: BlockItems = Vec::new();
+
+            while &self.peek_token != &Token::RBrace {
+                // parse_block_item() advances the token stream
+                function_body.push(self.parse_block_item()?)
+            }
 
             if self.current_token_is(&Token::RBrace) {
                 self.next_token();
                 Ok(ast::Function {
                     name: identifier,
-                    body: statement,
+                    body: function_body,
                 })
             } else {
                 Err(Error::UnexpectedToken {
