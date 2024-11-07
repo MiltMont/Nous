@@ -349,14 +349,18 @@ impl Parser {
     fn parse_factor(&mut self) -> Result<ast::Expression> {
         let current = self.current_token.clone();
         match current {
+            // <int>
             Token::Constant(i) => Ok(ast::Expression::Constant(i)),
+            Token::Identifier(identifier) => Ok(ast::Expression::Var(Identifier(identifier))),
             // If token is "~" or "-"
+            // <unop> <factor>
             Token::Negation | Token::BitComp | Token::Not => {
                 let operator = self.parse_unaryop()?;
                 let inner_expression = self.parse_factor()?;
 
                 Ok(ast::Expression::Unary(operator, Box::new(inner_expression)))
             }
+            // "(" <exp> ")"
             Token::LParen => {
                 self.next_token();
                 let inner_expression = self.parse_expression(0);
