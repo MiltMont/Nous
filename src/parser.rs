@@ -139,7 +139,7 @@ impl Parser {
 
     /// Returns an ast::Function or an Error String.
     ///
-    /// <function> ::== "int" <identifier> "(" "void" ")" "{" <statement> "}"
+    /// <function> ::== "int" <identifier> "(" "void" ")" "{" { <block-item> } "}"
     fn parse_function(&mut self) -> Result<ast::Function> {
         if self.current_token_is(&Token::Int) {
             self.next_token();
@@ -182,6 +182,16 @@ impl Parser {
                 message: None,
             })
         }
+    }
+
+    /// <block-item> ::== <statement> \ <declaration>
+    fn parse_block_item(&mut self) -> Result<ast::BlockItem> {
+        todo!()
+    }
+
+    /// <declaration> ::== "int" <identifier> [ "=" <exp> ] ";"
+    fn parse_declaration(&mut self) -> Result<ast::Declaration> {
+        todo!()
     }
 
     /// Matches on the current token, if it is
@@ -272,7 +282,7 @@ impl Parser {
         Ok(left)
     }
 
-    /// <factor> ::== <int> | <unop> <factor> | "(" <exp> ")"
+    /// <factor> ::== <int> \ <identifier> \ <unop> <factor> \ "(" <exp> ")"
     fn parse_factor(&mut self) -> Result<ast::Expression> {
         let current = self.current_token.clone();
         match current {
@@ -306,7 +316,7 @@ impl Parser {
 
     /// Parses the following grammar:
     ///
-    /// <statement> ::== "return" <exp> ";"
+    /// <statement> ::== "return" <exp> ";" \ <exp> ";" \ ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         if self.current_token_is(&Token::Return) {
             self.next_token();
