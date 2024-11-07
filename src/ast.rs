@@ -14,8 +14,8 @@ pub type BlockItems = Vec<BlockItem>;
 /// A declaration consists of a name
 /// and an optional initializer expression.
 pub struct Declaration {
-    name: Identifier,
-    initializer: Option<Expression>,
+    pub name: Identifier,
+    pub initializer: Option<Expression>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

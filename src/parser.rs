@@ -7,7 +7,7 @@ use std::{
 use logos::{Lexer, Logos};
 
 use crate::{
-    ast::{self, BlockItems},
+    ast::{self, BlockItems, Identifier},
     errors::{Error, Result},
     lexer::Token,
 };
@@ -211,7 +211,49 @@ impl Parser {
         // rule is followed by an `=` token, which means the
         // initializer is present, or a `;` token, which means
         // the initilizar is absent.
-        todo!()
+        if let Token::Int = self.current_token {
+            self.next_token();
+            // We must have an identifier now.
+            let name = self.parse_identifier()?;
+
+            // we check if the initializer is present
+            if let Token::Assign = self.current_token {
+                self.next_token();
+                // We now parse an expression.
+                // FIX: Should this be zero?
+                let initializer = Some(self.parse_expression(0)?);
+                if self.current_token_is(&Token::Semicolon) {
+                    return Ok(ast::Declaration { name, initializer });
+                } else {
+                    return Err(Error::UnexpectedToken {
+                        message: None,
+                        expected: Token::Semicolon,
+                        found: self.current_token.clone(),
+                    });
+                }
+            }
+
+            // The initializer is absent
+            // We check if the ";" is present
+            if self.current_token_is(&Token::Semicolon) {
+                Ok(ast::Declaration {
+                    name,
+                    initializer: None,
+                })
+            } else {
+                return Err(Error::UnexpectedToken {
+                    message: None,
+                    expected: Token::Semicolon,
+                    found: self.current_token.clone(),
+                });
+            }
+        } else {
+            return Err(Error::UnexpectedToken {
+                message: None,
+                expected: Token::Int,
+                found: self.current_token.clone(),
+            });
+        }
     }
 
     /// Matches on the current token, if it is
@@ -264,7 +306,8 @@ impl Parser {
     }
 
     /// Returns an ast::Identifier or an Error String.
-    ///
+    /// Advances the token stream if the current token
+    /// is an identifier.
     /// <identifier> ::== An identifier token
     fn parse_identifier(&mut self) -> Result<ast::Identifier> {
         if let Token::Identifier(s) = self.current_token.clone() {
