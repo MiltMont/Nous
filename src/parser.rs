@@ -286,6 +286,7 @@ impl Parser {
     /// binary operation
     fn parse_binaryop(&mut self) -> Result<ast::BinaryOperator> {
         match self.current_token {
+            Token::Assign => Ok(ast::BinaryOperator::Equal),
             Token::Add => Ok(ast::BinaryOperator::Add),
             Token::Negation => Ok(ast::BinaryOperator::Subtract),
             Token::Mul => Ok(ast::BinaryOperator::Multiply),
