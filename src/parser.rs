@@ -101,6 +101,7 @@ impl Parser {
         precedences.insert(Token::NotEqualTo, 30);
         precedences.insert(Token::And, 10);
         precedences.insert(Token::Or, 5);
+        precedences.insert(Token::Assign, 1);
 
         precedences
     }
@@ -334,12 +335,17 @@ impl Parser {
         while self.is_binary_operator(&next_token)
             && self.get_precedence(&next_token)? >= min_precedence
         {
-            self.next_token();
-            let operator = self.parse_binaryop()?;
-            self.next_token();
-            let right = self.parse_expression(self.get_precedence(&next_token)? + 1)?;
-            left = ast::Expression::Binary(operator, Box::new(left), Box::new(right));
-
+            if self.next_token_is(&Token::Assign) {
+                self.next_token();
+                let right = self.parse_expression(self.get_precedence(&next_token)?)?;
+                left = ast::Expression::Assignment(Box::new(left), Box::new(right));
+            } else {
+                self.next_token();
+                let operator = self.parse_binaryop()?;
+                self.next_token();
+                let right = Box::new(self.parse_expression(self.get_precedence(&next_token)? + 1)?);
+                left = ast::Expression::Binary(operator, Box::new(left), right);
+            }
             next_token = self.peek_token.clone()
         }
 
@@ -435,7 +441,7 @@ impl Parser {
                 | Token::And
                 | Token::Or
                 | Token::EqualTo
-                | Token::NotEqualTo
+                | Token::NotEqual
                 | Token::LessThan
                 | Token::LessThanOrEq
                 | Token::GreaterThan
