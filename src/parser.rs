@@ -191,11 +191,26 @@ impl Parser {
 
     /// <block-item> ::== <statement> \ <declaration>
     fn parse_block_item(&mut self) -> Result<ast::BlockItem> {
-        todo!()
+        // We need a way to tell wether the current block
+        // item is a statement or a declaration.
+        // To do this, we look at the first token; if it is
+        // `Token::Int`, then it's a declaration, otherwise
+        // it's a statement.
+        if matches!(self.current_token, Token::Int) {
+            // This is a declaration
+            Ok(ast::BlockItem::D(self.parse_declaration()?))
+        } else {
+            // This is a statement
+            Ok(ast::BlockItem::S(self.parse_statement()?))
+        }
     }
 
     /// <declaration> ::== "int" <identifier> [ "=" <exp> ] ";"
     fn parse_declaration(&mut self) -> Result<ast::Declaration> {
+        // This should check whether the identifier in the grammar
+        // rule is followed by an `=` token, which means the
+        // initializer is present, or a `;` token, which means
+        // the initilizar is absent.
         todo!()
     }
 
