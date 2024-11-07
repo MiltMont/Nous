@@ -441,7 +441,7 @@ impl Parser {
                 | Token::And
                 | Token::Or
                 | Token::EqualTo
-                | Token::NotEqual
+                | Token::NotEqualTo
                 | Token::LessThan
                 | Token::LessThanOrEq
                 | Token::GreaterThan
