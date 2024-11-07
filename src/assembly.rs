@@ -37,7 +37,7 @@ impl Debug for Program {
 #[derive(Clone)]
 pub struct Function {
     pub name: ast::Identifier,
-    pub instructions: Vec<Instruction>,
+    pub instructions: Instructions,
 }
 
 impl Function {
@@ -84,6 +84,8 @@ pub enum Instruction {
     SetCC(CondCode, Operand),
     Label(Identifier),
 }
+
+pub type Instructions = Vec<Instruction>;
 
 impl Instruction {
     #[allow(unused_variables)]
@@ -365,7 +367,7 @@ impl Assembly {
         }
     }
 
-    fn parse_instruction(&mut self, instruction: tac::Instruction) -> Vec<Instruction> {
+    fn parse_instruction(&mut self, instruction: tac::Instruction) -> Instructions {
         match instruction {
             tac::Instruction::Return(val) => {
                 vec![

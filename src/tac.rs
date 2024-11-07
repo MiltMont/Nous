@@ -18,7 +18,7 @@ impl From<&mut TAC> for Program {
 #[derive(Clone)]
 pub struct Function {
     pub identifier: ast::Identifier,
-    pub body: Vec<Instruction>,
+    pub body: Instructions,
 }
 
 impl Debug for Function {
@@ -62,6 +62,8 @@ pub enum Instruction {
     },
     Label(Identifier),
 }
+
+pub type Instructions = Vec<Instruction>;
 
 impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -123,7 +125,7 @@ pub struct TAC {
     source: ast::Program,
     temp_count: usize,
     label_count: usize,
-    instructions: Vec<Instruction>,
+    instructions: Instructions,
 }
 
 impl From<String> for TAC {

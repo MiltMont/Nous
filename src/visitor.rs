@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::assembly::{Assembly, BinaryOperator, Instruction, Operand, Program, Reg};
+use crate::assembly::{Assembly, BinaryOperator, Instruction, Instructions, Operand, Program, Reg};
 
 /// Visits an instance of an assembly program
 /// and modifies it's instruction array.
@@ -31,7 +31,7 @@ use crate::assembly::{Assembly, BinaryOperator, Instruction, Operand, Program, R
 /// ```
 pub struct AssemblyPass {
     program: Program,
-    instructions: Vec<Instruction>,
+    instructions: Instructions,
     pseudo_registers: HashMap<Operand, i64>,
     offset: i64,
 }
