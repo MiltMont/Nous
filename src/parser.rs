@@ -243,6 +243,7 @@ impl Parser {
             // The initializer is absent
             // We check if the ";" is present
             if self.current_token_is(&Token::Semicolon) {
+                self.next_token();
                 Ok(ast::Declaration {
                     name,
                     initializer: None,

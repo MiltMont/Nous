@@ -103,3 +103,20 @@ fn test_expression() {
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program)
 }
+
+#[test]
+fn test_no_expression() {
+    let mut parser = parser_from_path("playground/test_expression2.c");
+
+    let expected_body = vec![BlockItem::D(nous::ast::Declaration {
+        name: Identifier("y".into()),
+        initializer: None,
+    })];
+
+    let expected_program = Program(Function {
+        name: Identifier("main".into()),
+        body: expected_body,
+    });
+
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program);
+}
