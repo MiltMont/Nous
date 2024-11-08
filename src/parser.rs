@@ -125,6 +125,10 @@ impl Parser {
         self.current_token == *token
     }
 
+    fn peek_token_is(&self, token: &Token) -> bool {
+        &self.peek_token == token
+    }
+
     #[allow(dead_code)]
     fn next_token_is(&self, token: &Token) -> bool {
         self.peek_token == *token
@@ -163,13 +167,13 @@ impl Parser {
 
             let mut function_body: BlockItems = Vec::new();
 
-            while &self.peek_token != &Token::RBrace {
+            while !self.peek_token_is(&Token::RBrace) {
                 // parse_block_item() advances the token stream
-                function_body.push(self.parse_block_item()?)
+                function_body.push(self.parse_block_item()?);
             }
 
             if self.current_token_is(&Token::RBrace) {
-                self.next_token();
+                // self.next_token();
                 Ok(ast::Function {
                     name: identifier,
                     body: function_body,
@@ -178,14 +182,14 @@ impl Parser {
                 Err(Error::UnexpectedToken {
                     expected: Token::RBrace,
                     found: self.current_token.clone(),
-                    message: None,
+                    message: Some("Within `parse_function`".into()),
                 })
             }
         } else {
             Err(Error::UnexpectedToken {
                 expected: Token::Int,
                 found: self.current_token.clone(),
-                message: None,
+                message: Some("Within `parse_function`".into()),
             })
         }
     }
@@ -223,11 +227,13 @@ impl Parser {
                 // We now parse an expression.
                 // FIX: Should this be zero?
                 let initializer = Some(self.parse_expression(0)?);
+                self.next_token();
                 if self.current_token_is(&Token::Semicolon) {
+                    self.next_token();
                     return Ok(ast::Declaration { name, initializer });
                 } else {
                     return Err(Error::UnexpectedToken {
-                        message: None,
+                        message: Some("Within `parse_declaration`".into()),
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
                     });
@@ -242,18 +248,18 @@ impl Parser {
                     initializer: None,
                 })
             } else {
-                return Err(Error::UnexpectedToken {
-                    message: None,
+                Err(Error::UnexpectedToken {
+                    message: Some("Within `parse_declaration`".into()),
                     expected: Token::Semicolon,
                     found: self.current_token.clone(),
-                });
+                })
             }
         } else {
-            return Err(Error::UnexpectedToken {
-                message: None,
+            Err(Error::UnexpectedToken {
+                message: Some("Within `parse_declaration`".into()),
                 expected: Token::Int,
                 found: self.current_token.clone(),
-            });
+            })
         }
     }
 
@@ -392,31 +398,70 @@ impl Parser {
     ///
     /// <statement> ::== "return" <exp> ";" \ <exp> ";" \ ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
-        if self.current_token_is(&Token::Return) {
-            self.next_token();
-
-            let expression = self.parse_expression(0)?;
-            self.next_token();
-
-            if self.current_token_is(&Token::Semicolon) {
+        match &self.current_token {
+            Token::Return => {
                 self.next_token();
-                Ok(ast::Statement::Return(expression))
-            } else {
-                Err(Error::UnexpectedToken {
-                    expected: Token::Semicolon,
-                    found: self.current_token.clone(),
-                    message: None,
-                })
+
+                let expression = self.parse_expression(0)?;
+                self.next_token();
+
+                if self.current_token_is(&Token::Semicolon) {
+                    self.next_token();
+                    Ok(ast::Statement::Return(expression))
+                } else {
+                    Err(Error::UnexpectedToken {
+                        expected: Token::Semicolon,
+                        found: self.current_token.clone(),
+                        message: None,
+                    })
+                }
             }
-        } else {
-            Err(Error::UnexpectedToken {
-                expected: Token::Return,
-                found: self.current_token.clone(),
-                message: None,
-            })
+            Token::Semicolon => Ok(ast::Statement::Null),
+            _ => {
+                let expression = self.parse_expression(0)?;
+
+                self.next_token();
+
+                if self.current_token_is(&Token::Semicolon) {
+                    self.next_token();
+                    Ok(ast::Statement::Expression(expression))
+                } else {
+                    Err(Error::UnexpectedToken {
+                        expected: Token::Semicolon,
+                        found: self.current_token.clone(),
+                        message: None,
+                    })
+                }
+            }
         }
     }
-
+    // fn parse_statement(&mut self) -> Result<ast::Statement> {
+    //     if self.current_token_is(&Token::Return) {
+    //         self.next_token();
+    //
+    //         let expression = self.parse_expression(0)?;
+    //         self.next_token();
+    //
+    //         if self.current_token_is(&Token::Semicolon) {
+    //             self.next_token();
+    //             Ok(ast::Statement::Return(expression))
+    //         } else {
+    //             Err(Error::UnexpectedToken {
+    //                 expected: Token::Semicolon,
+    //                 found: self.current_token.clone(),
+    //                 message: None,
+    //             })
+    //         }
+    //     } else {
+    //         dbg!(&self.tokens);
+    //         Err(Error::UnexpectedToken {
+    //             expected: Token::Return,
+    //             found: self.current_token.clone(),
+    //             message: Some("Within `parse_statement`".into()),
+    //         })
+    //     }
+    // }
+    //
     /// Returns the precedence of a given operator.
     fn get_precedence(&self, binary_operator: &Token) -> Result<usize> {
         if let Some(i) = self.precedences.get(binary_operator) {

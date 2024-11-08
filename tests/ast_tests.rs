@@ -1,5 +1,5 @@
 use nous::{
-    ast::{Expression, Function, Identifier, Program, Statement},
+    ast::{BlockItem, Expression, Function, Identifier, Program, Statement},
     parser::Parser,
     utils::read_file,
 };
@@ -12,10 +12,13 @@ fn test_return_2() -> std::io::Result<()> {
 
     let test = Program(Function {
         name: Identifier("main".to_owned()),
-        body: Statement::Return(Expression::Constant(2)),
+        // body: Statement::Return(Expression::Constant(2)),
+        body: vec![BlockItem::S(Statement::Return(Expression::Constant(2)))],
     });
 
     let program = parser.to_ast_program().unwrap();
+
+    dbg!(&program);
 
     assert_eq!(program, test);
 

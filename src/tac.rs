@@ -174,7 +174,8 @@ impl TAC {
 
     fn parse_function(&mut self, function: ast::Function) -> Function {
         self.instructions = Vec::new();
-        let ret = self.parse_statement(function.body);
+        // let ret = self.parse_statement(function.body);
+        let ret = self.parse_statement(todo!());
 
         self.instructions.push(ret);
 

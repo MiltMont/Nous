@@ -1,4 +1,6 @@
-use crate::lexer::Token;
+use std::fmt::format;
+
+use crate::{ast::Expression, lexer::Token};
 use miette::Diagnostic;
 use thiserror::Error as ThisError;
 
@@ -9,7 +11,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[error("Error")]
 pub enum Error {
     /// Parser errors
-    #[error("Unexpected token. Expected {expected:?}, but found {found:?}")]
+    #[error("{message:?}. \n\tUnexpected token. Expected {expected:?}, but found {found:?}")]
     UnexpectedToken {
         message: Option<String>,
         expected: Token,

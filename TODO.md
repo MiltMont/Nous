@@ -1,5 +1,7 @@
 # TODO
 
+- [ ] Implement `From<String>` for `Identifier`.
+
 ## Tests 
 
 - [ ] Add lexer tests for logical and relational operators. 
@@ -33,3 +35,5 @@
 ## Lexer 
 
 - [ ] Modify tokens to carry line number and column.
+
+
