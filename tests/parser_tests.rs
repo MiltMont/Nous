@@ -120,3 +120,29 @@ fn test_no_expression() {
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
 }
+
+#[test]
+fn test_mixed_expression() {
+    let mut parser = parser_from_path("playground/test_expression3.c");
+
+    let expected_body = vec![
+        BlockItem::D(nous::ast::Declaration {
+            name: Identifier("x".into()),
+            initializer: None,
+        }),
+        BlockItem::D(nous::ast::Declaration {
+            name: Identifier("y".into()),
+            initializer: Some(Expression::Constant(3)),
+        }),
+        BlockItem::S(nous::ast::Statement::Return(Expression::Var(Identifier(
+            "y".into(),
+        )))),
+    ];
+
+    let expected_program = Program(Function {
+        name: Identifier("main".into()),
+        body: expected_body,
+    });
+
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program);
+}
