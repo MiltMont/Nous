@@ -78,6 +78,12 @@ impl Debug for Statement {
 #[derive(PartialEq, Clone, Hash, Eq)]
 pub struct Identifier(pub String);
 
+impl From<&str> for Identifier {
+    fn from(value: &str) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Debug for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "'{}'", &self.0)
