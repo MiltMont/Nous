@@ -15,7 +15,7 @@ fn test_unary() {
     );
 
     let expected_program = Program(Function {
-        name: Identifier(String::from("main")),
+        name: "main".into(),
         body: vec![BlockItem::S(nous::ast::Statement::Return(
             expected_expression,
         ))],
@@ -43,7 +43,7 @@ fn test_same_precedence() {
     );
 
     let expected_program = Program(nous::ast::Function {
-        name: nous::ast::Identifier(String::from("main")),
+        name: "main".into(),
         // body: nous::ast::Statement::Return(expected_expression),
         body: vec![BlockItem::S(nous::ast::Statement::Return(
             expected_expression,
@@ -72,8 +72,7 @@ fn test_different_precedences() {
     );
 
     let expected_program = Program(nous::ast::Function {
-        name: nous::ast::Identifier(String::from("main")),
-        // body: nous::ast::Statement::Return(expected_expression),
+        name: "main".into(),
         body: vec![BlockItem::S(nous::ast::Statement::Return(
             expected_expression,
         ))],
@@ -88,16 +87,14 @@ fn test_expression() {
 
     let expected_body = vec![
         BlockItem::D(nous::ast::Declaration {
-            name: Identifier("x".into()),
+            name: "x".into(),
             initializer: Some(Expression::Constant(3)),
         }),
-        BlockItem::S(nous::ast::Statement::Return(Expression::Var(Identifier(
-            "x".into(),
-        )))),
+        BlockItem::S(nous::ast::Statement::Return(Expression::Var("x".into()))),
     ];
 
     let expected_program = Program(Function {
-        name: Identifier("main".into()),
+        name: "main".into(),
         body: expected_body,
     });
 
@@ -109,12 +106,12 @@ fn test_no_expression() {
     let mut parser = parser_from_path("playground/test_expression2.c");
 
     let expected_body = vec![BlockItem::D(nous::ast::Declaration {
-        name: Identifier("y".into()),
+        name: "y".into(),
         initializer: None,
     })];
 
     let expected_program = Program(Function {
-        name: Identifier("main".into()),
+        name: "main".into(),
         body: expected_body,
     });
 
@@ -127,16 +124,14 @@ fn test_mixed_expression() {
 
     let expected_body = vec![
         BlockItem::D(nous::ast::Declaration {
-            name: Identifier("x".into()),
+            name: "x".into(),
             initializer: None,
         }),
         BlockItem::D(nous::ast::Declaration {
-            name: Identifier("y".into()),
+            name: "y".into(),
             initializer: Some(Expression::Constant(3)),
         }),
-        BlockItem::S(nous::ast::Statement::Return(Expression::Var(Identifier(
-            "y".into(),
-        )))),
+        BlockItem::S(nous::ast::Statement::Return(Expression::Var("y".into()))),
     ];
 
     let expected_program = Program(Function {
