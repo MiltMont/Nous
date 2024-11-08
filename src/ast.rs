@@ -2,10 +2,19 @@ use crate::errors::Result;
 use crate::parser::Parser;
 use std::fmt::Debug;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum BlockItem {
     S(Statement),
     D(Declaration),
+}
+
+impl Debug for BlockItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::S(arg0) => f.debug_tuple("").field(arg0).finish(),
+            Self::D(arg0) => f.debug_tuple("").field(arg0).finish(),
+        }
+    }
 }
 
 pub type BlockItems = Vec<BlockItem>;
@@ -100,7 +109,7 @@ impl Debug for Function {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Function(\n\t\tname: {:?} \n\t\tbody: \n\t\t{:?}\n\t)",
+            "Function(\n\t\tname: {:?} \n\t\tbody: \n\t\t{:#?}\n\t)",
             &self.name.0, &self.body
         )
     }
