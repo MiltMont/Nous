@@ -11,8 +11,8 @@ pub enum BlockItem {
 impl Debug for BlockItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::S(arg0) => f.debug_tuple("").field(arg0).finish(),
-            Self::D(arg0) => f.debug_tuple("").field(arg0).finish(),
+            Self::S(arg0) => write!(f, "\n{arg0:?}"),
+            Self::D(arg0) => write!(f, "\n{arg0:?}"),
         }
     }
 }
@@ -64,7 +64,7 @@ pub enum Expression {
     Assignment(Box<Expression>, Box<Expression>),
 }
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Statement {
     Return(Expression),
     /// Takes an expression node.
@@ -72,16 +72,6 @@ pub enum Statement {
     /// Represents null statements, which are expression
     /// statements without the expression.
     Null,
-}
-
-impl Debug for Statement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Return(arg0) => write!(f, "Return(\n{:#?} \n\t\t)", arg0),
-            Self::Null => write!(f, "Null"),
-            Self::Expression(e) => write!(f, "Expression(\n{:#?}\n\t)", e),
-        }
-    }
 }
 
 #[derive(PartialEq, Clone, Hash, Eq)]

@@ -1,4 +1,7 @@
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::Debug,
+};
 
 use crate::{
     assembly::{Assembly, BinaryOperator, Instruction, Instructions, Operand, Program, Reg},
@@ -293,11 +296,25 @@ impl AssemblyPass {
 ///
 /// It renames each local variable with a globally unique
 /// identifier.
-#[derive(Debug)]
 pub struct VariableResolution {
     block_items: ast::BlockItems,
     variable_map: HashMap<Identifier, String>,
     offset: usize,
+}
+
+impl Debug for VariableResolution {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Variable Resolution: \nblock_items: {:#?}\n\nvariables_map: {:#?}",
+            &self.block_items, &self.variable_map
+        )
+        // f.debug_struct("VariableResolution")
+        //     .field("block_items", &self.block_items)
+        //     .field("variable_map", &self.variable_map)
+        //     .field("offset", &self.offset)
+        //     .finish()
+    }
 }
 
 impl From<ast::Program> for VariableResolution {
@@ -311,10 +328,7 @@ impl From<ast::Program> for VariableResolution {
 }
 
 impl VariableResolution {
-    pub fn resolve_declaration(
-        &mut self,
-        declaration: ast::Declaration,
-    ) -> Result<ast::Declaration> {
+    fn resolve_declaration(&mut self, declaration: ast::Declaration) -> Result<ast::Declaration> {
         if self.variable_map.contains_key(&declaration.name) {
             return Err(Error::DuplicateVarDeclaration {
                 var: declaration.name,
@@ -365,6 +379,10 @@ impl VariableResolution {
         Ok(self)
     }
 
+    pub fn get_updated_block_items(&mut self) -> Result<ast::BlockItems> {
+        // TODO: Avoid cloning
+        Ok(self.pass()?.block_items.clone())
+    }
     fn resolve_expression(&self, expression: ast::Expression) -> Result<ast::Expression> {
         match expression {
             ast::Expression::Assignment(left, right) => {
