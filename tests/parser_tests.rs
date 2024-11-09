@@ -1,5 +1,8 @@
 use nous::{
-    ast::{BinaryOperator, BlockItem, Expression, Function, Identifier, Program, UnaryOperator},
+    ast::{
+        BinaryOperator, BlockItem, Declaration, Expression, Function, Identifier, Program,
+        Statement, UnaryOperator,
+    },
     utils::parser_from_path,
 };
 // Testing unary operators
@@ -140,4 +143,36 @@ fn test_mixed_expression() {
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
+}
+
+#[test]
+fn test_expr_dec() {
+    let mut parser = parser_from_path("playground/test_expression5.c");
+
+    let exptected_body = vec![
+        BlockItem::D(Declaration {
+            name: "temp".into(),
+            initializer: Some(Expression::Constant(3)),
+        }),
+        BlockItem::D(Declaration {
+            name: "x".into(),
+            initializer: Some(Expression::Constant(10)),
+        }),
+        BlockItem::S(Statement::Expression(Expression::Assignment(
+            Box::new(Expression::Var("temp".into())),
+            Box::new(Expression::Binary(
+                BinaryOperator::Subtract,
+                Box::new(Expression::Var("temp".into())),
+                Box::new(Expression::Var("x".into())),
+            )),
+        ))),
+        BlockItem::S(Statement::Return(Expression::Var("temp".into()))),
+    ];
+
+    let exptected_program = Program(Function {
+        name: "main".into(),
+        body: exptected_body,
+    });
+
+    assert_eq!(parser.to_ast_program().unwrap(), exptected_program);
 }

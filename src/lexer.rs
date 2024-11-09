@@ -5,6 +5,7 @@ use logos::Logos;
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
 pub enum Token {
+    // FIX: This cannot parse identifiers like `temp1`
     #[regex("[a-zA-Z_]+", |lex| lex.slice().to_string())]
     Identifier(String),
 
