@@ -1,7 +1,7 @@
 use std::{fmt::Debug, fs, path::PathBuf, rc::Rc};
 
 use crate::{
-    ast::{self, BinaryOperator, Identifier},
+    ast::{self, BinaryOperator, Expression, Identifier},
     parser::Parser,
 };
 
@@ -301,7 +301,16 @@ impl TAC {
                     dst
                 }
             },
-            _ => todo!(),
+            ast::Expression::Var(i) => Val::Var(i),
+            ast::Expression::Assignment(a, b) => {
+                let temp = a.clone();
+                let result = self.parse_val(*b);
+                let dst = self.parse_val(*a.clone());
+                self.instructions
+                    .push(Instruction::Copy { src: result, dst });
+
+                self.parse_val(*a)
+            }
         }
     }
 
