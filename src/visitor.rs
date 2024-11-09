@@ -383,11 +383,12 @@ impl VariableResolution {
         // TODO: Avoid cloning
         Ok(self.pass()?.block_items.clone())
     }
+
     fn resolve_expression(&self, expression: ast::Expression) -> Result<ast::Expression> {
         match expression {
             ast::Expression::Assignment(left, right) => {
                 if !matches!(*left, ast::Expression::Var(_)) {
-                    todo!()
+                    Err(Error::InvalidLVal { value: *left })
                 } else {
                     Ok(ast::Expression::Assignment(
                         Box::new(self.resolve_expression(*left)?),

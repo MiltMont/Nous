@@ -45,6 +45,7 @@ pub enum Error {
     UndeclaredVar { value: ast::Identifier },
 
     /// Io errors
+    // TODO: This may be an OS error
     #[diagnostic()]
     IoError(#[from] std::io::Error),
 }
