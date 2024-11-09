@@ -1,7 +1,7 @@
 use std::{fmt::Debug, fs, path::PathBuf, rc::Rc};
 
 use crate::{
-    ast::{self, BinaryOperator, Expression, Identifier},
+    ast::{self, BinaryOperator, Declaration, Identifier},
     parser::Parser,
 };
 
@@ -185,7 +185,7 @@ impl TAC {
         // self.instructions = Vec::from_iter(function.body.into_iter().map(|x| self.parse_block(x)));
 
         for block in function.body {
-            self.convert_block(block);
+            self.process_block(block);
         }
 
         Function {
@@ -194,25 +194,45 @@ impl TAC {
         }
     }
 
-    fn convert_block(&mut self, block: ast::BlockItem) {
+    fn process_block(&mut self, block: ast::BlockItem) {
         match block {
             ast::BlockItem::S(statement) => {
-                let proc = self.parse_statement(statement);
-                self.instructions.push(proc);
+                if let Some(instruction) = self.parse_statement(statement) {
+                    self.instructions.push(instruction);
+                }
             }
-            ast::BlockItem::D(declaration) => todo!(),
+            ast::BlockItem::D(declaration) => {
+                // let instruction = self.convert_declaration(declaration);
+                // self.instructions.push(instruction);
+                self.process_declaration(declaration);
+            }
         }
     }
 
-    fn parse_statement(&mut self, statement: ast::Statement) -> Instruction {
+    fn process_declaration(&mut self, declaration: Declaration) {
+        if let Some(x) = declaration.initializer {
+            // If a declaration includes an initializer, we’ll handle it like a normal variable assignment
+            self.parse_val(x);
+        }
+    }
+
+    fn parse_statement(&mut self, statement: ast::Statement) -> Option<Instruction> {
         match statement {
             ast::Statement::Return(expression) => {
                 let val = self.parse_val(expression);
 
-                Instruction::Return(val)
+                Some(Instruction::Return(val))
             }
-            ast::Statement::Expression(e) => todo!(),
-            ast::Statement::Null => todo!(),
+            // To convert an expression statement to TACKY, we just process
+            // the inner expression. This will return a new temporary variable thath
+            // holds the result of the expression, but we wont use that variable
+            // again during TAC generation
+            ast::Statement::Expression(expression) => {
+                let val = self.parse_val(expression);
+                None
+            }
+            // We wont emit instructions for a null statement
+            ast::Statement::Null => None,
         }
     }
 
