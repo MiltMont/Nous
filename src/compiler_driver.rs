@@ -214,9 +214,11 @@ impl CompilerDriver {
         if self.file_path.exists() {
             let file = fs::read_to_string(&self.file_path).expect("Unable to read file.");
             let lexer = Token::lexer(&file);
-            let tokens: Vec<Token> = Vec::from_iter(lexer.clone().map(|x| x.unwrap()));
-            println!("{:?}", lexer);
-            println!("{:?}", tokens);
+            let tokn = Vec::from_iter(lexer);
+            // let tokens: Vec<Token> = Vec::from_iter(lexer.clone().map(|x| x.unwrap()));
+            // println!("{:?}", lexer);
+            // println!("{:?}", tokens);
+            println!("{:?}", tokn);
             Ok(())
         } else {
             Err(crate::errors::Error::IoError(io::Error::other(
