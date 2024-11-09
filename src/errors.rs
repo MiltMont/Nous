@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::{
     ast::{self, Expression},
     lexer::Token,

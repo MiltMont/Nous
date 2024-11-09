@@ -342,7 +342,9 @@ impl Parser {
         while self.is_binary_operator(&next_token)
             && self.get_precedence(&next_token)? >= min_precedence
         {
-            if self.next_token_is(&Token::Assign) {
+            if next_token == Token::Assign {
+                // HACK: Is this correct?
+                self.next_token();
                 self.next_token();
                 let right = self.parse_expression(self.get_precedence(&next_token)?)?;
                 left = ast::Expression::Assignment(Box::new(left), Box::new(right));
@@ -413,7 +415,7 @@ impl Parser {
                     Err(Error::UnexpectedToken {
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
-                        message: None,
+                        message: Some("Within `parse_statement`".into()),
                     })
                 }
             }
@@ -430,7 +432,7 @@ impl Parser {
                     Err(Error::UnexpectedToken {
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
-                        message: None,
+                        message: Some("Within `parse_statement`".into()),
                     })
                 }
             }
@@ -492,6 +494,7 @@ impl Parser {
                 | Token::LessThanOrEq
                 | Token::GreaterThan
                 | Token::GreaterThanOrEq
+                | Token::Assign
         )
     }
 }

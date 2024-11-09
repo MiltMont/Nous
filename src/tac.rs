@@ -161,6 +161,7 @@ impl From<PathBuf> for TAC {
     }
 }
 
+#[allow(unreachable_code, unused)]
 impl TAC {
     pub fn to_tac_program(&mut self) -> Program {
         self.parse_program()

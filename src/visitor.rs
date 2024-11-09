@@ -1,9 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use crate::{
-    assembly::{
-        Assembly, BinaryOperator, Instruction, Instructions, Operand, Program, Reg, UnaryOperator,
-    },
+    assembly::{Assembly, BinaryOperator, Instruction, Instructions, Operand, Program, Reg},
     ast::{self, Declaration, Identifier},
     errors::{Error, Result},
 };
