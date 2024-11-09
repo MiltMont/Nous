@@ -174,15 +174,33 @@ impl TAC {
     }
 
     fn parse_function(&mut self, function: ast::Function) -> Function {
-        self.instructions = Vec::new();
-        // let ret = self.parse_statement(function.body);
-        let ret = self.parse_statement(todo!());
+        // self.instructions = Vec::new();
+        // // let ret = self.parse_statement(function.body);
+        // let ret = self.parse_statement(todo!());
+        //
+        // self.instructions.push(ret);
 
-        self.instructions.push(ret);
+        // For each block we push the parsed block into the
+        // instructions.
+        // self.instructions = Vec::from_iter(function.body.into_iter().map(|x| self.parse_block(x)));
+
+        for block in function.body {
+            self.convert_block(block);
+        }
 
         Function {
             identifier: function.name,
             body: self.instructions.clone(),
+        }
+    }
+
+    fn convert_block(&mut self, block: ast::BlockItem) {
+        match block {
+            ast::BlockItem::S(statement) => {
+                let proc = self.parse_statement(statement);
+                self.instructions.push(proc);
+            }
+            ast::BlockItem::D(declaration) => todo!(),
         }
     }
 
@@ -193,7 +211,8 @@ impl TAC {
 
                 Instruction::Return(val)
             }
-            _ => todo!(),
+            ast::Statement::Expression(e) => todo!(),
+            ast::Statement::Null => todo!(),
         }
     }
 
