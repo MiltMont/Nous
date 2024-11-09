@@ -295,8 +295,8 @@ impl AssemblyPass {
 ///
 /// It renames each local variable with a globally unique
 /// identifier.
+#[derive(Debug)]
 pub struct VariableResolution {
-    program: ast::Program,
     block_items: ast::BlockItems,
     variable_map: HashMap<Identifier, String>,
     offset: usize,
@@ -304,11 +304,8 @@ pub struct VariableResolution {
 
 impl From<ast::Program> for VariableResolution {
     fn from(value: ast::Program) -> Self {
-        let block_items = value.0.body.clone();
-
         VariableResolution {
-            program: value,
-            block_items,
+            block_items: value.0.body,
             variable_map: HashMap::new(),
             offset: 0,
         }
@@ -350,7 +347,7 @@ impl VariableResolution {
     // TODO: Check if this assignement doesnt conflict with other assignements.
     fn make_temporary_name(&mut self, name: &str) -> String {
         self.offset += 1;
-        format!("{}.{}", self.offset, name)
+        format!("{}.{}", name, self.offset)
     }
 
     pub fn pass(&mut self) -> Result<&mut Self> {

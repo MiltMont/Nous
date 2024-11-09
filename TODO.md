@@ -10,6 +10,7 @@
 ## Parser
 
 - [x] Fix errors when compiling expressions containing nested unary operators. (`~(-(3))`) 
+- [ ] Correctly parse `playground/test_expression4.c`.
 
 ## Assembly 
 
