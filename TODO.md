@@ -1,11 +1,11 @@
 # TODO
 
-- [ ] Implement `From<String>` for `Identifier`.
+- [x] Implement `From<String>` for `Identifier`.
 
 ## Tests 
 
 - [ ] Add lexer tests for logical and relational operators. 
-- [ ] Make documentations tests pass. 
+- [x] Make documentations tests pass. 
 
 ## Parser
 
@@ -22,13 +22,13 @@
 
 ## Code emission 
 
-- [ ] Design a better test suite to check correctness of assembly generation for nested binary operators. 
-- [ ] Write a test for `playground/test_add_mul.c` and make it pass. 
+- [x] Design a better test suite to check correctness of assembly generation for nested binary operators. 
+- [x] Write a test for `playground/test_add_mul.c` and make it pass. 
 
 ## End-to-end
 
 - [ ] Implement End-to-end test suite that check correctness of the `gcc` compiler output.
-- [ ] Make `quick_compile` work on `test_logical2.c`.
+- [x] Make `quick_compile` work on `test_logical2.c`.
 
 # Error handling
 

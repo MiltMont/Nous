@@ -1,6 +1,9 @@
 use std::fmt::format;
 
-use crate::{ast::Expression, lexer::Token};
+use crate::{
+    ast::{self, Expression},
+    lexer::Token,
+};
 use miette::Diagnostic;
 use thiserror::Error as ThisError;
 
@@ -32,6 +35,16 @@ pub enum Error {
 
     #[error("{found:?} is not a unary operator")]
     NotUnop { found: Token },
+
+    /// Variable resolution errors
+    #[error("Variable resolution error, duplicate variable declaration: {var:#?}")]
+    DuplicateVarDeclaration { var: ast::Identifier },
+
+    #[error("Invalid left value: {value:?}")]
+    InvalidLVal { value: Expression },
+
+    #[error("Undeclared variable: {value:?}")]
+    UndeclaredVar { value: ast::Identifier },
 
     /// Io errors
     #[diagnostic()]

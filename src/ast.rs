@@ -19,7 +19,7 @@ impl Debug for BlockItem {
 
 pub type BlockItems = Vec<BlockItem>;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 /// A declaration consists of a name
 /// and an optional initializer expression.
 pub struct Declaration {
@@ -27,7 +27,7 @@ pub struct Declaration {
     pub initializer: Option<Expression>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub enum BinaryOperator {
     Add,
     Subtract,
@@ -45,14 +45,14 @@ pub enum BinaryOperator {
     GreaterOrEqual,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub enum UnaryOperator {
     Complement,
     Negate,
     Not,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub enum Expression {
     Constant(i64),
     /// This holds a variable name
@@ -90,6 +90,24 @@ pub struct Identifier(pub String);
 impl From<&str> for Identifier {
     fn from(value: &str) -> Self {
         Self(value.into())
+    }
+}
+
+impl From<String> for Identifier {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&String> for Identifier {
+    fn from(value: &String) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<Identifier> for String {
+    fn from(value: Identifier) -> Self {
+        value.0
     }
 }
 
