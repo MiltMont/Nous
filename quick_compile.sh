@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-cargo run -- -f $1 emit-code >$2
+cargo run -- -f $1 emit-code >test.s
 
-gcc $2 -o $3
+gcc test.s -o test
 
-./$3
+./test
 
 echo $?
 
 # Removing files
-rm $2 $3
+rm test.s test
