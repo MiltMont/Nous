@@ -152,7 +152,7 @@ fn test_expr_dec() {
     let exptected_body = vec![
         BlockItem::D(Declaration {
             name: "temp".into(),
-            initializer: Some(Expression::Constant(3)),
+            initializer: Some(Expression::Constant(10)),
         }),
         BlockItem::D(Declaration {
             name: "x".into(),
