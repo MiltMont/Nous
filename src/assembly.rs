@@ -42,9 +42,16 @@ pub struct Function {
 
 impl Function {
     pub fn format(&self) -> String {
+        // In maconame s function names must start with an underscore.
+        let name = if true {
+            &format!("_{}", self.name.0)
+        } else {
+            &self.name.0
+        };
+
         let mut result = format!(
             "\t.globl {}\n{}:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n",
-            self.name.0, self.name.0
+            name, name
         );
 
         for instruction in &self.instructions {
