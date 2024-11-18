@@ -43,7 +43,7 @@ pub struct Function {
 impl Function {
     pub fn format(&self) -> String {
         // In maconame s function names must start with an underscore.
-        let name = if true {
+        let name = if env::consts::OS == "macos" {
             &format!("_{}", self.name.0)
         } else {
             &self.name.0
