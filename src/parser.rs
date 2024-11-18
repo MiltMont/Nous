@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::VecDeque,
     fs::{self},
     path::PathBuf,
 };
@@ -31,9 +31,6 @@ pub struct Parser {
     current_token: Token,
     /// Next token in token stream
     peek_token: Token,
-
-    /// Map of operator precedences
-    precedences: HashMap<Token, usize>,
 }
 
 impl From<String> for Parser {
@@ -49,7 +46,6 @@ impl From<String> for Parser {
             tokens,
             current_token,
             peek_token,
-            precedences: Parser::get_precedence_map(),
         }
     }
 }
@@ -80,30 +76,7 @@ impl Parser {
             tokens,
             current_token,
             peek_token,
-            precedences: Parser::get_precedence_map(),
         }
-    }
-
-    pub fn get_precedence_map() -> HashMap<Token, usize> {
-        let mut precedences = HashMap::new();
-
-        // Defining the precedence values.
-        precedences.insert(Token::Mul, 50);
-        precedences.insert(Token::Div, 50);
-        precedences.insert(Token::Remainder, 50);
-        precedences.insert(Token::Add, 45);
-        precedences.insert(Token::Negation, 45);
-        precedences.insert(Token::LessThan, 35);
-        precedences.insert(Token::LessThanOrEq, 35);
-        precedences.insert(Token::GreaterThan, 35);
-        precedences.insert(Token::GreaterThanOrEq, 35);
-        precedences.insert(Token::EqualTo, 30);
-        precedences.insert(Token::NotEqualTo, 30);
-        precedences.insert(Token::And, 10);
-        precedences.insert(Token::Or, 5);
-        precedences.insert(Token::Assign, 1);
-
-        precedences
     }
 
     /// Generates and AST from the constructed parser.
@@ -339,20 +312,18 @@ impl Parser {
 
         let mut next_token = self.peek_token.clone();
 
-        while self.is_binary_operator(&next_token)
-            && self.get_precedence(&next_token)? >= min_precedence
-        {
-            if next_token == Token::Assign {
+        while self.is_binary_operator(&next_token) && next_token.precedence()? >= min_precedence {
+            if self.next_token_is(&Token::Assign) {
                 // HACK: Is this correct?
                 self.next_token();
                 self.next_token();
-                let right = self.parse_expression(self.get_precedence(&next_token)?)?;
+                let right = self.parse_expression(next_token.precedence()?)?;
                 left = ast::Expression::Assignment(Box::new(left), Box::new(right));
             } else {
                 self.next_token();
                 let operator = self.parse_binaryop()?;
                 self.next_token();
-                let right = Box::new(self.parse_expression(self.get_precedence(&next_token)? + 1)?);
+                let right = Box::new(self.parse_expression(next_token.precedence()? + 1)?);
                 left = ast::Expression::Binary(operator, Box::new(left), right);
             }
             next_token = self.peek_token.clone()
@@ -436,43 +407,6 @@ impl Parser {
                     })
                 }
             }
-        }
-    }
-    // fn parse_statement(&mut self) -> Result<ast::Statement> {
-    //     if self.current_token_is(&Token::Return) {
-    //         self.next_token();
-    //
-    //         let expression = self.parse_expression(0)?;
-    //         self.next_token();
-    //
-    //         if self.current_token_is(&Token::Semicolon) {
-    //             self.next_token();
-    //             Ok(ast::Statement::Return(expression))
-    //         } else {
-    //             Err(Error::UnexpectedToken {
-    //                 expected: Token::Semicolon,
-    //                 found: self.current_token.clone(),
-    //                 message: None,
-    //             })
-    //         }
-    //     } else {
-    //         dbg!(&self.tokens);
-    //         Err(Error::UnexpectedToken {
-    //             expected: Token::Return,
-    //             found: self.current_token.clone(),
-    //             message: Some("Within `parse_statement`".into()),
-    //         })
-    //     }
-    // }
-    //
-    /// Returns the precedence of a given operator.
-    fn get_precedence(&self, binary_operator: &Token) -> Result<usize> {
-        if let Some(i) = self.precedences.get(binary_operator) {
-            Ok(*i)
-        } else {
-            Err(Error::Precedence {
-                found: binary_operator.clone(),
-            })
         }
     }
 
