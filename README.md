@@ -1,9 +1,9 @@
-# Nous compiler
+# Nous compiler 🛰️
 
 This is a C compiler written in Rust. It translates C code 
 into x86 assembly. 
 
-## Getting started
+## Getting started 🦾
 
 ### Prerequisites
 
@@ -27,7 +27,7 @@ cargo test
 ```
 
 
-## Development information 
+## Development information 👨🏽‍🔬
 
 ### Prototyping and testing 
 
