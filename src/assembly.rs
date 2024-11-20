@@ -37,14 +37,21 @@ impl Debug for Program {
 #[derive(Clone)]
 pub struct Function {
     pub name: ast::Identifier,
-    pub instructions: Vec<Instruction>,
+    pub instructions: Instructions,
 }
 
 impl Function {
     pub fn format(&self) -> String {
+        // In maconame s function names must start with an underscore.
+        let name = if env::consts::OS == "macos" {
+            &format!("_{}", self.name.0)
+        } else {
+            &self.name.0
+        };
+
         let mut result = format!(
             "\t.globl {}\n{}:\n\tpushq\t%rbp\n\tmovq\t%rsp, %rbp\n",
-            self.name.0, self.name.0
+            name, name
         );
 
         for instruction in &self.instructions {
@@ -84,6 +91,8 @@ pub enum Instruction {
     SetCC(CondCode, Operand),
     Label(Identifier),
 }
+
+pub type Instructions = Vec<Instruction>;
 
 impl Instruction {
     #[allow(unused_variables)]
@@ -365,7 +374,7 @@ impl Assembly {
         }
     }
 
-    fn parse_instruction(&mut self, instruction: tac::Instruction) -> Vec<Instruction> {
+    fn parse_instruction(&mut self, instruction: tac::Instruction) -> Instructions {
         match instruction {
             tac::Instruction::Return(val) => {
                 vec![

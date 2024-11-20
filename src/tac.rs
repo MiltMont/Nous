@@ -1,7 +1,7 @@
 use std::{fmt::Debug, fs, path::PathBuf, rc::Rc};
 
 use crate::{
-    ast::{self, BinaryOperator, Identifier},
+    ast::{self, BinaryOperator, Declaration, Identifier},
     parser::Parser,
 };
 
@@ -18,7 +18,7 @@ impl From<&mut TAC> for Program {
 #[derive(Clone)]
 pub struct Function {
     pub identifier: ast::Identifier,
-    pub body: Vec<Instruction>,
+    pub body: Instructions,
 }
 
 impl Debug for Function {
@@ -62,6 +62,8 @@ pub enum Instruction {
     },
     Label(Identifier),
 }
+
+pub type Instructions = Vec<Instruction>;
 
 impl Debug for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -123,7 +125,7 @@ pub struct TAC {
     source: ast::Program,
     temp_count: usize,
     label_count: usize,
-    instructions: Vec<Instruction>,
+    instructions: Instructions,
 }
 
 impl From<String> for TAC {
@@ -159,6 +161,7 @@ impl From<PathBuf> for TAC {
     }
 }
 
+#[allow(unreachable_code, unused)]
 impl TAC {
     pub fn to_tac_program(&mut self) -> Program {
         self.parse_program()
@@ -171,10 +174,19 @@ impl TAC {
     }
 
     fn parse_function(&mut self, function: ast::Function) -> Function {
-        self.instructions = Vec::new();
-        let ret = self.parse_statement(function.body);
+        // self.instructions = Vec::new();
+        // // let ret = self.parse_statement(function.body);
+        // let ret = self.parse_statement(todo!());
+        //
+        // self.instructions.push(ret);
 
-        self.instructions.push(ret);
+        // For each block we push the parsed block into the
+        // instructions.
+        // self.instructions = Vec::from_iter(function.body.into_iter().map(|x| self.parse_block(x)));
+
+        for block in function.body {
+            self.process_block(block);
+        }
 
         Function {
             identifier: function.name,
@@ -182,13 +194,45 @@ impl TAC {
         }
     }
 
-    fn parse_statement(&mut self, statement: ast::Statement) -> Instruction {
+    fn process_block(&mut self, block: ast::BlockItem) {
+        match block {
+            ast::BlockItem::S(statement) => {
+                if let Some(instruction) = self.parse_statement(statement) {
+                    self.instructions.push(instruction);
+                }
+            }
+            ast::BlockItem::D(declaration) => {
+                // let instruction = self.convert_declaration(declaration);
+                // self.instructions.push(instruction);
+                self.process_declaration(declaration);
+            }
+        }
+    }
+
+    fn process_declaration(&mut self, declaration: Declaration) {
+        if let Some(x) = declaration.initializer {
+            // If a declaration includes an initializer, we’ll handle it like a normal variable assignment
+            self.parse_val(x);
+        }
+    }
+
+    fn parse_statement(&mut self, statement: ast::Statement) -> Option<Instruction> {
         match statement {
             ast::Statement::Return(expression) => {
                 let val = self.parse_val(expression);
 
-                Instruction::Return(val)
+                Some(Instruction::Return(val))
             }
+            // To convert an expression statement to TACKY, we just process
+            // the inner expression. This will return a new temporary variable thath
+            // holds the result of the expression, but we wont use that variable
+            // again during TAC generation
+            ast::Statement::Expression(expression) => {
+                let val = self.parse_val(expression);
+                None
+            }
+            // We wont emit instructions for a null statement
+            ast::Statement::Null => None,
         }
     }
 
@@ -296,6 +340,16 @@ impl TAC {
                     dst
                 }
             },
+            ast::Expression::Var(i) => Val::Var(i),
+            ast::Expression::Assignment(a, b) => {
+                let temp = a.clone();
+                let result = self.parse_val(*b);
+                let dst = self.parse_val(*a.clone());
+                self.instructions
+                    .push(Instruction::Copy { src: result, dst });
+
+                self.parse_val(*a)
+            }
         }
     }
 

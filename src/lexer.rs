@@ -1,3 +1,4 @@
+use crate::errors::{Error, Result};
 use logos::Logos;
 
 #[derive(Hash, Eq, Logos, Debug, PartialEq, Clone)]
@@ -5,7 +6,8 @@ use logos::Logos;
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
 pub enum Token {
-    #[regex("[a-zA-Z_]+", |lex| lex.slice().to_string())]
+    // FIX: This cannot parse identifiers like `temp1`
+    #[regex("[a-zA-Z][a-zA-Z0-9_-]*", |lex| lex.slice().to_string())]
     Identifier(String),
 
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().unwrap())]
@@ -89,4 +91,32 @@ pub enum Token {
 
     #[token(">=")]
     GreaterThanOrEq,
+
+    /// Assignment operator
+    #[token("=")]
+    Assign,
+}
+
+impl Token {
+    pub fn precedence(&self) -> Result<usize> {
+        match self {
+            Token::Mul => Ok(50),
+            Token::Div => Ok(50),
+            Token::Remainder => Ok(50),
+            Token::Add => Ok(45),
+            Token::Negation => Ok(45),
+            Token::LessThan => Ok(35),
+            Token::LessThanOrEq => Ok(35),
+            Token::GreaterThan => Ok(35),
+            Token::GreaterThanOrEq => Ok(35),
+            Token::EqualTo => Ok(30),
+            Token::NotEqualTo => Ok(30),
+            Token::And => Ok(10),
+            Token::Or => Ok(5),
+            Token::Assign => Ok(1),
+            token => Err(Error::Precedence {
+                found: token.clone(),
+            }),
+        }
+    }
 }

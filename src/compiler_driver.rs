@@ -4,7 +4,7 @@ use crate::lexer::Token;
 use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
-use crate::visitor::AssemblyPass;
+use crate::visitor::{AssemblyPass, VariableResolution};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
@@ -32,13 +32,16 @@ enum Commands {
     /// Directs preprocessor to run the lexer and parser,
     /// but stop before assembly generation.
     Parse,
+    /// Runs the compiler through the semantic analysis
+    /// stage, stopping before tacky generation.
+    Validate,
+    /// Directs preprocessor to run everything up to (and including)
+    /// TAC generation.
+    Tac,
     /// Directs preprocessor to run lexing, parsing, and
     /// assembly generation, but stop before code
     /// emission.
     CodeGen,
-    /// Directs preprocessor to run everything up to (and including)
-    /// TAC generation.
-    Tac,
     /// Directs preprocessor to run everything up to (and including)
     /// Assembly code generation.
     EmitCode,
@@ -211,9 +214,11 @@ impl CompilerDriver {
         if self.file_path.exists() {
             let file = fs::read_to_string(&self.file_path).expect("Unable to read file.");
             let lexer = Token::lexer(&file);
-            let tokens: Vec<Token> = Vec::from_iter(lexer.clone().map(|x| x.unwrap()));
-            println!("{:?}", lexer);
-            println!("{:?}", tokens);
+            let tokn = Vec::from_iter(lexer);
+            // let tokens: Vec<Token> = Vec::from_iter(lexer.clone().map(|x| x.unwrap()));
+            // println!("{:?}", lexer);
+            // println!("{:?}", tokens);
+            println!("{:?}", tokn);
             Ok(())
         } else {
             Err(crate::errors::Error::IoError(io::Error::other(
@@ -312,6 +317,24 @@ impl CompilerDriver {
         }
     }
 
+    fn validate(&self) -> Result<()> {
+        if self.file_path.exists() {
+            let mut parser = Parser::from(self.file_path.clone());
+            let ast = parser.to_ast_program()?;
+
+            let mut semantic_analysis = VariableResolution::from(ast);
+            semantic_analysis.pass()?;
+
+            println!("{semantic_analysis:?}");
+
+            Ok(())
+        } else {
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed code emission, no such file",
+            )))?
+        }
+    }
+
     pub fn run(self) -> MResult<()> {
         match self.cmd {
             Commands::Lex => self.lex_file()?,
@@ -319,6 +342,7 @@ impl CompilerDriver {
             Commands::CodeGen => self.code_gen()?,
             Commands::Tac => self.tac_gen()?,
             Commands::EmitCode => self.emit_code()?,
+            Commands::Validate => self.validate()?,
         }
         // self.preprocess_file()?;
         // self.compile_preproc_file()?;

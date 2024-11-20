@@ -1,4 +1,7 @@
-use crate::lexer::Token;
+use crate::{
+    ast::{self, Expression},
+    lexer::Token,
+};
 use miette::Diagnostic;
 use thiserror::Error as ThisError;
 
@@ -9,7 +12,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[error("Error")]
 pub enum Error {
     /// Parser errors
-    #[error("Unexpected token. Expected {expected:?}, but found {found:?}")]
+    #[error("{message:?}. \n\tUnexpected token. Expected {expected:?}, but found {found:?}")]
     UnexpectedToken {
         message: Option<String>,
         expected: Token,
@@ -31,7 +34,18 @@ pub enum Error {
     #[error("{found:?} is not a unary operator")]
     NotUnop { found: Token },
 
+    /// Variable resolution errors
+    #[error("Variable resolution error, duplicate variable declaration: {var:#?}")]
+    DuplicateVarDeclaration { var: ast::Identifier },
+
+    #[error("Invalid left value: {value:?}")]
+    InvalidLVal { value: Expression },
+
+    #[error("Undeclared variable: {value:?}")]
+    UndeclaredVar { value: ast::Identifier },
+
     /// Io errors
+    // TODO: This may be an OS error
     #[diagnostic()]
     IoError(#[from] std::io::Error),
 }
