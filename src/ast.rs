@@ -69,6 +69,11 @@ pub enum Statement {
     Return(Expression),
     /// Takes an expression node.
     Expression(Expression),
+    If {
+        condition: Expression,
+        then: Box<Statement>,
+        else_statement: Option<Box<Statement>>,
+    },
     /// Represents null statements, which are expression
     /// statements without the expression.
     Null,

@@ -236,6 +236,7 @@ impl TAC {
             }
             // We wont emit instructions for a null statement
             ast::Statement::Null => None,
+            _ => todo!(),
         }
     }
 

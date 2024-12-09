@@ -426,6 +426,7 @@ impl VariableResolution {
                 Ok(ast::Statement::Expression(self.resolve_expression(e)?))
             }
             ast::Statement::Null => Ok(ast::Statement::Null),
+            _ => todo!(),
         }
     }
 }
