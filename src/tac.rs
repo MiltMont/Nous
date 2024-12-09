@@ -202,8 +202,6 @@ impl TAC {
                 }
             }
             ast::BlockItem::D(declaration) => {
-                // let instruction = self.convert_declaration(declaration);
-                // self.instructions.push(instruction);
                 self.process_declaration(declaration);
             }
         }
@@ -211,8 +209,13 @@ impl TAC {
 
     fn process_declaration(&mut self, declaration: Declaration) {
         if let Some(x) = declaration.initializer {
-            // If a declaration includes an initializer, we’ll handle it like a normal variable assignment
-            self.parse_val(x);
+            // If a declaration includes an initializer,
+            // we’ll handle it like a normal variable assignment
+            let expression = ast::Expression::Assignment(
+                Box::new(ast::Expression::Var(declaration.name)),
+                Box::new(x),
+            );
+            self.parse_val(expression);
         }
     }
 
@@ -341,14 +344,18 @@ impl TAC {
                 }
             },
             ast::Expression::Var(i) => Val::Var(i),
-            ast::Expression::Assignment(a, b) => {
-                let temp = a.clone();
-                let result = self.parse_val(*b);
-                let dst = self.parse_val(*a.clone());
-                self.instructions
-                    .push(Instruction::Copy { src: result, dst });
+            ast::Expression::Assignment(a, rhs) => {
+                assert!(matches!(*a, ast::Expression::Var(_)));
 
-                self.parse_val(*a)
+                let result = self.parse_val(*rhs);
+                let dst = self.parse_val(*a);
+
+                self.instructions.push(Instruction::Copy {
+                    src: result,
+                    dst: dst.clone(),
+                });
+
+                dst
             }
         }
     }
