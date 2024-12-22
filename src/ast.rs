@@ -62,6 +62,11 @@ pub enum Expression {
     /// Consists of the lvalue beign updated and the expression
     /// we're assigning to that lvalue.
     Assignment(Box<Expression>, Box<Expression>),
+    Conditional {
+        condition: Box<Expression>,
+        exp1: Box<Expression>,
+        exp2: Box<Expression>,
+    },
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
