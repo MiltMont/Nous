@@ -416,6 +416,7 @@ impl VariableResolution {
                 Box::new(self.resolve_expression(*a)?),
                 Box::new(self.resolve_expression(*b)?),
             )),
+            _ => todo!(),
         }
     }
 
