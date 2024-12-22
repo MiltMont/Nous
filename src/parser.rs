@@ -167,14 +167,14 @@ impl Parser {
         }
     }
 
-    /// <block-item> ::== <statement> \ <declaration>
+    /// <block-item> ::== <statement> | <declaration>
     fn parse_block_item(&mut self) -> Result<ast::BlockItem> {
         // We need a way to tell wether the current block
         // item is a statement or a declaration.
         // To do this, we look at the first token; if it is
         // `Token::Int`, then it's a declaration, otherwise
         // it's a statement.
-        if matches!(self.current_token, Token::Int) {
+        if self.current_token_is(&Token::Int) {
             // This is a declaration
             Ok(ast::BlockItem::D(self.parse_declaration()?))
         } else {
@@ -370,7 +370,10 @@ impl Parser {
 
     /// Parses the following grammar:
     ///
-    /// <statement> ::== "return" <exp> ";" \ <exp> ";" \ ";"
+    /// <statement> ::== "return" <exp> ";"
+    ///             | <exp> ";"
+    ///             | "if" "(" <exp> ")" <statement> ["else" <statement>]
+    ///             | ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         match &self.current_token {
             Token::Return => {
@@ -391,6 +394,44 @@ impl Parser {
                 }
             }
             Token::Semicolon => Ok(ast::Statement::Null),
+            Token::If => {
+                self.next_token();
+
+                if self.current_token_is(&Token::LParen) {
+                    let condition = self.parse_expression(0)?;
+
+                    if self.current_token_is(&Token::RParen) {
+                        self.next_token();
+                        let then = Box::new(self.parse_statement()?);
+
+                        let else_statement: Option<Box<ast::Statement>> =
+                            if self.current_token_is(&Token::Else) {
+                                self.next_token();
+                                Some(Box::new(self.parse_statement()?))
+                            } else {
+                                None
+                            };
+
+                        Ok(ast::Statement::If {
+                            condition,
+                            then,
+                            else_statement,
+                        })
+                    } else {
+                        Err(Error::UnexpectedToken {
+                            message: Some("Within `parse_statement`".into()),
+                            expected: Token::RParen,
+                            found: self.current_token.clone(),
+                        })
+                    }
+                } else {
+                    Err(Error::UnexpectedToken {
+                        message: Some("Within `parse_statement`".into()),
+                        expected: Token::LParen,
+                        found: self.current_token.clone(),
+                    })
+                }
+            }
             _ => {
                 let expression = self.parse_expression(0)?;
 
