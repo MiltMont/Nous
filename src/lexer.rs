@@ -130,6 +130,7 @@ impl Token {
             Token::And => Ok(10),
             Token::Or => Ok(5),
             Token::Assign => Ok(1),
+            Token::QuestionMark => Ok(3),
             token => Err(Error::Precedence {
                 found: token.clone(),
             }),
