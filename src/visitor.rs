@@ -416,7 +416,15 @@ impl VariableResolution {
                 Box::new(self.resolve_expression(*a)?),
                 Box::new(self.resolve_expression(*b)?),
             )),
-            _ => todo!(),
+            ast::Expression::Conditional {
+                condition,
+                exp1,
+                exp2,
+            } => Ok(ast::Expression::Conditional {
+                condition: Box::new(self.resolve_expression(*condition)?),
+                exp1: Box::new(self.resolve_expression(*exp1)?),
+                exp2: Box::new(self.resolve_expression(*exp2)?),
+            }),
         }
     }
 
@@ -427,7 +435,23 @@ impl VariableResolution {
                 Ok(ast::Statement::Expression(self.resolve_expression(e)?))
             }
             ast::Statement::Null => Ok(ast::Statement::Null),
-            _ => todo!(),
+            ast::Statement::If {
+                condition,
+                then,
+                else_statement,
+            } => {
+                let else_stmt = if let Some(else_st) = else_statement {
+                    Some(Box::new(self.resolve_statement(*else_st)?))
+                } else {
+                    None
+                };
+
+                Ok(ast::Statement::If {
+                    condition: self.resolve_expression(condition)?,
+                    then: Box::new(self.resolve_statement(*then)?),
+                    else_statement: else_stmt,
+                })
+            }
         }
     }
 }
