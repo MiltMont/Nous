@@ -236,7 +236,67 @@ impl TAC {
             }
             // We wont emit instructions for a null statement
             ast::Statement::Null => None,
-            _ => todo!(),
+            ast::Statement::If {
+                condition,
+
+                then,
+                else_statement,
+            } => {
+                if let Some(else_stmt) = else_statement {
+                    // A statement of the form `if(<condition>) then <statement1> else <statement2>`
+                    // transaltes to:
+                    // <instructions_for_condition>
+                    // c = <result_of_condition>
+                    // JumpIfZero(c, else_label)
+                    // <instructions for statement1>
+                    // Jump(end)
+                    // Label(else_label)
+                    // <instructions_for_statement2>
+                    // Label(end)
+                    let result_of_condition = self.parse_val(condition);
+                    let end_label = self.make_label("end");
+                    let else_label = self.make_label("else");
+
+                    self.instructions.push(Instruction::JumpIfZero {
+                        condition: result_of_condition,
+                        target: (&else_label).into(),
+                    });
+
+                    let instructions_for_statement1 = self.parse_statement(*then)?;
+                    self.instructions.push(instructions_for_statement1);
+                    self.instructions.push(Instruction::Jump {
+                        target: (&end_label).into(),
+                    });
+                    self.instructions
+                        .push(Instruction::Label(else_label.into()));
+                    let instructions_for_statement2 = self.parse_statement(*else_stmt);
+                    if let Some(instruction) = instructions_for_statement2 {
+                        self.instructions.push(instruction);
+                    }
+                    self.instructions.push(Instruction::Label(end_label.into()));
+                } else {
+                    // A statement of the form `if(<condition>) then <statement>`
+                    // should translate to:
+                    //
+                    // <instructions for condition>
+                    // c = <result_of_condition>
+                    // JumpIfZero(c, end)
+                    // <instructions_for_statement>
+                    // Label(end)
+                    let result_of_condition = self.parse_val(condition);
+                    let end_label = self.make_label("end");
+
+                    self.instructions.push(Instruction::JumpIfZero {
+                        condition: result_of_condition,
+                        target: (&end_label).into(),
+                    });
+
+                    let instructions_for_statement = self.parse_statement(*then)?;
+                    self.instructions.push(instructions_for_statement);
+                    self.instructions.push(Instruction::Label(end_label.into()));
+                };
+                None
+            }
         }
     }
 
@@ -358,7 +418,11 @@ impl TAC {
 
                 dst
             }
-            _ => todo!(),
+            ast::Expression::Conditional {
+                condition,
+                exp1,
+                exp2,
+            } => todo!(),
         }
     }
 
@@ -374,5 +438,10 @@ impl TAC {
             BinaryOperator::Or => format!("or_true.{:?}", self.label_count),
             _ => "Error!!".into(),
         }
+    }
+
+    fn make_label(&mut self, prefix: &str) -> String {
+        self.label_count += 1;
+        format!("{prefix}{}", self.label_count)
     }
 }

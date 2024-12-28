@@ -1,6 +1,6 @@
 use nous::{
     ast::{BinaryOperator, Identifier},
-    tac::{Instruction, Val},
+    tac::{self, Instruction, Val},
     utils::tac_from_path,
 };
 
@@ -30,6 +30,16 @@ fn test_binary_op() {
         },
         Instruction::Return(Val::Var(Identifier(String::from("tmp.3")))),
     ];
+
+    assert_eq!(expected_instructions, program.0.body);
+}
+
+#[test]
+fn test_if_statement() {
+    let mut tac = tac_from_path("playground/test_if3.c");
+    let program = tac.to_tac_program();
+
+    let expected_instructions: tac::Instructions = vec![];
 
     assert_eq!(expected_instructions, program.0.body);
 }

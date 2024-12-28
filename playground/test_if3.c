@@ -1,8 +1,8 @@
 int main(void) { 
-    if (2 > 0) 
+    if (1 > 2)
         return 0;
-    else if (1 > 2)
-        return 1; 
-    else 
+    else if (0 < 1) 
         return 2;
+    else 
+      return 1;
 }
