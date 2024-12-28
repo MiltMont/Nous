@@ -306,18 +306,14 @@ impl Debug for VariableResolution {
             "Variable Resolution: \nblock_items: {:#?}\n\nvariables_map: {:#?}",
             &self.block_items, &self.variable_map
         )
-        // f.debug_struct("VariableResolution")
-        //     .field("block_items", &self.block_items)
-        //     .field("variable_map", &self.variable_map)
-        //     .field("offset", &self.offset)
-        //     .finish()
     }
 }
 
 impl From<ast::Program> for VariableResolution {
     fn from(value: ast::Program) -> Self {
         VariableResolution {
-            block_items: value.0.body,
+            // FIX: Is this right?
+            block_items: value.0.body.0,
             variable_map: HashMap::new(),
             offset: 0,
         }
@@ -449,6 +445,7 @@ impl VariableResolution {
                     else_statement: else_stmt,
                 })
             }
+            ast::Statement::Compound(_block) => todo!(),
         }
     }
 }

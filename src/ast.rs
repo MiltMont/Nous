@@ -2,6 +2,9 @@ use crate::errors::Result;
 use crate::parser::Parser;
 use std::fmt::Debug;
 
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct Block(pub BlockItems);
+
 #[derive(PartialEq, Eq, Clone)]
 pub enum BlockItem {
     S(Statement),
@@ -82,6 +85,8 @@ pub enum Statement {
     /// Represents null statements, which are expression
     /// statements without the expression.
     Null,
+    /// Represents compount statements.
+    Compound(Block),
 }
 
 #[derive(PartialEq, Clone, Hash, Eq)]
@@ -120,7 +125,7 @@ impl Debug for Identifier {
 #[derive(PartialEq, Clone)]
 pub struct Function {
     pub name: Identifier,
-    pub body: BlockItems,
+    pub body: Block,
 }
 
 impl Debug for Function {

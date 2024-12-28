@@ -7,7 +7,7 @@ use std::{
 use logos::{Lexer, Logos};
 
 use crate::{
-    ast::{self, BlockItems, Identifier},
+    ast::{self, Block, Identifier},
     errors::{Error, Result},
     lexer::Token,
 };
@@ -98,9 +98,9 @@ impl Parser {
         self.current_token == *token
     }
 
-    fn peek_token_is(&self, token: &Token) -> bool {
-        &self.peek_token == token
-    }
+    //fn peek_token_is(&self, token: &Token) -> bool {
+    //    &self.peek_token == token
+    //}
 
     #[allow(dead_code)]
     fn next_token_is(&self, token: &Token) -> bool {
@@ -117,13 +117,14 @@ impl Parser {
 
     /// Returns an ast::Function or an Error String.
     ///
-    /// <function> ::== "int" <identifier> "(" "void" ")" "{" { <block-item> } "}"
+    /// <function> ::= "int" <identifier> "(" "void" ")" <block>
     fn parse_function(&mut self) -> Result<ast::Function> {
         if self.current_token_is(&Token::Int) {
             self.next_token();
 
             let identifier = self.parse_identifier()?;
-            let expected_structure = vec![Token::LParen, Token::Void, Token::RParen, Token::LBrace];
+            //matching: (void)
+            let expected_structure = vec![Token::LParen, Token::Void, Token::RParen];
 
             // Check if incoming token stream matches the expected_structure
             for token in expected_structure {
@@ -138,31 +139,38 @@ impl Parser {
                 }
             }
 
-            let mut function_body: BlockItems = Vec::new();
+            let function_body = self.parse_block()?;
 
-            while !self.peek_token_is(&Token::RBrace) {
-                // parse_block_item() advances the token stream
-                function_body.push(self.parse_block_item()?);
-            }
-
-            if self.current_token_is(&Token::RBrace) {
-                // self.next_token();
-                Ok(ast::Function {
-                    name: identifier,
-                    body: function_body,
-                })
-            } else {
-                Err(Error::UnexpectedToken {
-                    expected: Token::RBrace,
-                    found: self.current_token.clone(),
-                    message: Some("Within `parse_function`".into()),
-                })
-            }
+            Ok(ast::Function {
+                name: identifier,
+                body: function_body,
+            })
         } else {
             Err(Error::UnexpectedToken {
                 expected: Token::Int,
                 found: self.current_token.clone(),
                 message: Some("Within `parse_function`".into()),
+            })
+        }
+    }
+
+    /// <block> ::= "{" { <block-item> } "}"
+    fn parse_block(&mut self) -> Result<Block> {
+        if self.current_token_is(&Token::LBrace) {
+            self.next_token();
+            let mut blocks = Vec::new();
+
+            // FIX: What happens if we dont have an RBrace?
+            while !self.current_token_is(&Token::RBrace) {
+                blocks.push(self.parse_block_item()?);
+            }
+
+            Ok(Block(blocks))
+        } else {
+            Err(Error::UnexpectedToken {
+                message: Some("Within `parse_block`".into()),
+                expected: Token::LBrace,
+                found: self.current_token.clone(),
             })
         }
     }
@@ -410,6 +418,7 @@ impl Parser {
     /// <statement> ::== "return" <exp> ";"
     ///             | <exp> ";"
     ///             | "if" "(" <exp> ")" <statement> ["else" <statement>]
+    ///             | <block>
     ///             | ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         match &self.current_token {
@@ -468,6 +477,12 @@ impl Parser {
                         found: self.current_token.clone(),
                     })
                 }
+            }
+            Token::LBrace => {
+                self.next_token();
+                let block = self.parse_block()?;
+
+                Ok(ast::Statement::Compound(block))
             }
             _ => {
                 let expression = self.parse_expression(0)?;
