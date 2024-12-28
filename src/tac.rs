@@ -1,4 +1,4 @@
-use std::{fmt::Debug, fs, path::PathBuf, rc::Rc};
+use std::{fmt::Debug, fs, path::PathBuf};
 
 use crate::{
     ast::{self, BinaryOperator, Declaration, Identifier},
@@ -303,7 +303,7 @@ impl TAC {
             ast::Expression::Unary(op, inner) => {
                 let src = self.parse_val(*inner);
                 let dst_name = self.make_temporary_name();
-                let dst = Val::Var(ast::Identifier(dst_name));
+                let dst = Val::Var(dst_name.into());
                 self.instructions.push(Instruction::Unary {
                     operator: op,
                     src,
@@ -317,36 +317,36 @@ impl TAC {
                     let v2 = self.parse_val(*e2);
 
                     //let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::And));
-                    let temp_label_name = Rc::new(self.make_label("and"));
+                    let temp_label_name = self.make_label("and");
 
                     self.instructions.append(
                         vec![
                             Instruction::JumpIfZero {
                                 condition: v1,
-                                target: Identifier(temp_label_name.to_string()),
+                                target: (&temp_label_name).into(),
                             },
                             Instruction::JumpIfZero {
                                 condition: v2,
-                                target: Identifier(temp_label_name.to_string()),
+                                target: (&temp_label_name).into(),
                             },
                             Instruction::Copy {
                                 src: Val::Constant(1),
-                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
+                                dst: Val::Var(format!("result.{}", self.label_count).into()),
                             },
                             Instruction::Jump {
-                                target: Identifier(format!("end.{}", self.label_count)),
+                                target: format!("end.{}", self.label_count).into(),
                             },
-                            Instruction::Label(Identifier(temp_label_name.to_string())),
+                            Instruction::Label((&temp_label_name).into()),
                             Instruction::Copy {
                                 src: Val::Constant(0),
-                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
+                                dst: Val::Var(format!("result.{}", self.label_count).into()),
                             },
-                            Instruction::Label(Identifier(format!("end.{}", self.label_count))),
+                            Instruction::Label(format!("end.{}", self.label_count).into()),
                         ]
                         .as_mut(),
                     );
 
-                    Val::Var(Identifier(format!("result.{}", self.label_count)))
+                    Val::Var(format!("result.{}", self.label_count).into())
                 }
 
                 ast::BinaryOperator::Or => {
@@ -354,45 +354,45 @@ impl TAC {
                     let v2 = self.parse_val(*e2);
 
                     //let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::Or));
-                    let temp_label_name = Rc::new(self.make_label("or"));
+                    let temp_label_name = self.make_label("or");
 
                     self.instructions.append(
                         vec![
                             Instruction::JumpIfNotZero {
                                 condition: v1,
-                                target: Identifier(temp_label_name.to_string()),
+                                target: (&temp_label_name).into(),
                             },
                             Instruction::JumpIfNotZero {
                                 condition: v2,
-                                target: Identifier(temp_label_name.to_string()),
+                                target: (&temp_label_name).into(),
                             },
                             // If no jumps are performed then both values
                             // are zero, meaning the result is 0.
                             Instruction::Copy {
                                 src: Val::Constant(0),
-                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
+                                dst: Val::Var(format!("result.{}", self.label_count).into()),
                             },
                             Instruction::Jump {
-                                target: Identifier(format!("end.{}", self.label_count)),
+                                target: format!("end.{}", self.label_count).into(),
                             },
                             // If we jump to this label then one of the values
                             // is non-zero, meaning the result is 1.
-                            Instruction::Label(Identifier(temp_label_name.to_string())),
+                            Instruction::Label((&temp_label_name).into()),
                             Instruction::Copy {
                                 src: Val::Constant(1),
-                                dst: Val::Var(Identifier(format!("result.{}", self.label_count))),
+                                dst: Val::Var(format!("result.{}", self.label_count).into()),
                             },
-                            Instruction::Label(Identifier(format!("end.{}", self.label_count))),
+                            Instruction::Label(format!("end.{}", self.label_count).into()),
                         ]
                         .as_mut(),
                     );
-                    Val::Var(Identifier(format!("result.{}", self.label_count)))
+                    Val::Var(format!("result.{}", self.label_count).into())
                 }
                 _ => {
                     let v1 = self.parse_val(*e1);
                     let v2 = self.parse_val(*e2);
                     let dst_name = self.make_temporary_name();
-                    let dst = Val::Var(ast::Identifier(dst_name));
+                    let dst = Val::Var(dst_name.into());
                     self.instructions.push(Instruction::Binary {
                         binary_operator: op,
                         src_1: v1,
