@@ -180,3 +180,27 @@ fn test_expression_2() {
     clean_files(file_name).expect("Cleaning files");
     assert_eq!(status, 3);
 }
+
+#[test]
+fn test_if_statement() {
+    let file_name = "if_1";
+    let mut assembly = Assembly::from(PathBuf::from("playground/test_if5.c"));
+    assembly.parse_program();
+    let mut visitor = AssemblyPass::build(assembly);
+    visitor
+        .replace_pseudo_registers()
+        .rewrite_mov()
+        .rewrite_binop()
+        .rewrite_cmp()
+        .allocate_stack();
+
+    let program = visitor.modify_program();
+
+    write_to_file(file_name, &program.format()).expect("Should write to program file");
+
+    compile_assembly(file_name).expect("Should compile assembly code");
+    let status = grab(file_name).expect("Should grab status code");
+
+    clean_files(file_name).expect("Cleaning files");
+    assert_eq!(status, 0);
+}
