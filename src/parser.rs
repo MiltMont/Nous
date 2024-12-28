@@ -167,14 +167,14 @@ impl Parser {
         }
     }
 
-    /// <block-item> ::== <statement> \ <declaration>
+    /// <block-item> ::== <statement> | <declaration>
     fn parse_block_item(&mut self) -> Result<ast::BlockItem> {
         // We need a way to tell wether the current block
         // item is a statement or a declaration.
         // To do this, we look at the first token; if it is
         // `Token::Int`, then it's a declaration, otherwise
         // it's a statement.
-        if matches!(self.current_token, Token::Int) {
+        if self.current_token_is(&Token::Int) {
             // This is a declaration
             Ok(ast::BlockItem::D(self.parse_declaration()?))
         } else {
@@ -306,19 +306,29 @@ impl Parser {
 
     /// Parses the grammar:
     ///
-    /// <exp> ::== <factor> | <exp> <binop> <exp>
+    /// <exp> ::== <factor> | <exp> <binop> <exp> | <exp> "?" <exp> ":" <exp>
     fn parse_expression(&mut self, min_precedence: usize) -> Result<ast::Expression> {
         let mut left = self.parse_factor()?;
 
         let mut next_token = self.peek_token.clone();
 
         while self.is_binary_operator(&next_token) && next_token.precedence()? >= min_precedence {
-            if self.next_token_is(&Token::Assign) {
+            if matches!(next_token, Token::Assign) {
                 // HACK: Is this correct?
                 self.next_token();
                 self.next_token();
                 let right = self.parse_expression(next_token.precedence()?)?;
                 left = ast::Expression::Assignment(Box::new(left), Box::new(right));
+            } else if matches!(next_token, Token::QuestionMark) {
+                self.next_token();
+                let middle = self.parse_conditional_middle()?;
+                self.next_token();
+                let right = self.parse_expression(next_token.precedence()?)?;
+                left = ast::Expression::Conditional {
+                    condition: Box::new(left),
+                    exp1: Box::new(middle),
+                    exp2: Box::new(right),
+                };
             } else {
                 self.next_token();
                 let operator = self.parse_binaryop()?;
@@ -332,13 +342,40 @@ impl Parser {
         Ok(left)
     }
 
+    /// This function just consumes a `?` token, then parses an expression
+    /// (with the minimum precedence reset to 0) and finally
+    /// consumes the `:` token.
+    fn parse_conditional_middle(&mut self) -> Result<ast::Expression> {
+        if self.current_token_is(&Token::QuestionMark) {
+            self.next_token();
+            let expression = self.parse_expression(0);
+            if self.next_token_is(&Token::Colon) {
+                self.next_token();
+                Ok(expression?)
+            } else {
+                Err(Error::UnexpectedToken {
+                    message: Some("Within `parse_conditional_middle`".into()),
+                    expected: Token::Colon,
+                    found: self.current_token.clone(),
+                })
+            }
+        } else {
+            Err(Error::UnexpectedToken {
+                message: Some("Within `parse_conditional_statement`".into()),
+                expected: Token::QuestionMark,
+                found: self.current_token.clone(),
+            })
+        }
+    }
+
     /// <factor> ::== <int> \ <identifier> \ <unop> <factor> \ "(" <exp> ")"
     fn parse_factor(&mut self) -> Result<ast::Expression> {
-        let current = self.current_token.clone();
-        match current {
+        match &self.current_token {
             // <int>
-            Token::Constant(i) => Ok(ast::Expression::Constant(i)),
-            Token::Identifier(identifier) => Ok(ast::Expression::Var(Identifier(identifier))),
+            Token::Constant(i) => Ok(ast::Expression::Constant(*i)),
+            Token::Identifier(identifier) => {
+                Ok(ast::Expression::Var(Identifier(identifier.clone())))
+            }
             // If token is "~" or "-"
             // <unop> <factor>
             Token::Negation | Token::BitComp | Token::Not => {
@@ -370,7 +407,10 @@ impl Parser {
 
     /// Parses the following grammar:
     ///
-    /// <statement> ::== "return" <exp> ";" \ <exp> ";" \ ";"
+    /// <statement> ::== "return" <exp> ";"
+    ///             | <exp> ";"
+    ///             | "if" "(" <exp> ")" <statement> ["else" <statement>]
+    ///             | ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         match &self.current_token {
             Token::Return => {
@@ -391,6 +431,44 @@ impl Parser {
                 }
             }
             Token::Semicolon => Ok(ast::Statement::Null),
+            Token::If => {
+                self.next_token();
+
+                if self.current_token_is(&Token::LParen) {
+                    let condition = self.parse_expression(0)?;
+
+                    if self.current_token_is(&Token::RParen) {
+                        self.next_token();
+                        let then = Box::new(self.parse_statement()?);
+
+                        let else_statement: Option<Box<ast::Statement>> =
+                            if self.current_token_is(&Token::Else) {
+                                self.next_token();
+                                Some(Box::new(self.parse_statement()?))
+                            } else {
+                                None
+                            };
+
+                        Ok(ast::Statement::If {
+                            condition,
+                            then,
+                            else_statement,
+                        })
+                    } else {
+                        Err(Error::UnexpectedToken {
+                            message: Some("Within `parse_statement`".into()),
+                            expected: Token::RParen,
+                            found: self.current_token.clone(),
+                        })
+                    }
+                } else {
+                    Err(Error::UnexpectedToken {
+                        message: Some("Within `parse_statement`".into()),
+                        expected: Token::LParen,
+                        found: self.current_token.clone(),
+                    })
+                }
+            }
             _ => {
                 let expression = self.parse_expression(0)?;
 
@@ -429,6 +507,7 @@ impl Parser {
                 | Token::GreaterThan
                 | Token::GreaterThanOrEq
                 | Token::Assign
+                | Token::QuestionMark // This is a ternary op.
         )
     }
 }

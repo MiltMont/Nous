@@ -6,7 +6,6 @@ use logos::Logos;
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
 pub enum Token {
-    // FIX: This cannot parse identifiers like `temp1`
     #[regex("[a-zA-Z][a-zA-Z0-9_-]*", |lex| lex.slice().to_string())]
     Identifier(String),
 
@@ -95,6 +94,23 @@ pub enum Token {
     /// Assignment operator
     #[token("=")]
     Assign,
+
+    /// Conditional operators
+    #[token("if")]
+    If,
+
+    #[token("else")]
+    Else,
+
+    /// A question mark, the delimiter between the first and second
+    /// operands in a conditional expression
+    #[token("?")]
+    QuestionMark,
+
+    /// A colon, the delimiter between the second and third operands
+    /// in a conditional expression
+    #[token(":")]
+    Colon,
 }
 
 impl Token {
@@ -114,6 +130,7 @@ impl Token {
             Token::And => Ok(10),
             Token::Or => Ok(5),
             Token::Assign => Ok(1),
+            Token::QuestionMark => Ok(3),
             token => Err(Error::Precedence {
                 found: token.clone(),
             }),
