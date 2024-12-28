@@ -184,7 +184,7 @@ fn test_expression_2() {
 #[test]
 fn test_if_statement() {
     let file_name = "if_1";
-    let mut assembly = Assembly::from(PathBuf::from("playground/test_if5.c"));
+    let mut assembly = Assembly::from(PathBuf::from("playground/test_if6.c"));
     assembly.parse_program();
     let mut visitor = AssemblyPass::build(assembly);
     visitor
@@ -202,5 +202,5 @@ fn test_if_statement() {
     let status = grab(file_name).expect("Should grab status code");
 
     clean_files(file_name).expect("Cleaning files");
-    assert_eq!(status, 0);
+    assert_eq!(status, 1);
 }

@@ -162,10 +162,7 @@ impl AssemblyPass {
                         src: a.clone(),
                         dst: Operand::Register(Reg::R10),
                     });
-                    new_instructions.push(Instruction::Mov {
-                        src: Operand::Register(Reg::R10),
-                        dst: b.clone(),
-                    });
+                    new_instructions.push(Instruction::Cmp(Operand::Register(Reg::R10), b.clone()));
                 } else if matches!(b, Operand::Imm(_)) {
                     new_instructions.push(Instruction::Mov {
                         src: b.clone(),
