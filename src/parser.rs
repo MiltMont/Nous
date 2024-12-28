@@ -418,7 +418,7 @@ impl Parser {
     /// <statement> ::== "return" <exp> ";"
     ///             | <exp> ";"
     ///             | "if" "(" <exp> ")" <statement> ["else" <statement>]
-    ///             | <block>
+    ///             | Compound(block)
     ///             | ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         match &self.current_token {
@@ -479,9 +479,9 @@ impl Parser {
                 }
             }
             Token::LBrace => {
-                self.next_token();
                 let block = self.parse_block()?;
 
+                self.next_token();
                 Ok(ast::Statement::Compound(block))
             }
             _ => {
