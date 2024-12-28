@@ -242,6 +242,8 @@ impl TAC {
                 then,
                 else_statement,
             } => {
+                let result_of_condition = self.parse_val(condition);
+                let end_label = self.make_label("end");
                 if let Some(else_stmt) = else_statement {
                     // A statement of the form `if(<condition>) then <statement1> else <statement2>`
                     // transaltes to:
@@ -253,8 +255,6 @@ impl TAC {
                     // Label(else_label)
                     // <instructions_for_statement2>
                     // Label(end)
-                    let result_of_condition = self.parse_val(condition);
-                    let end_label = self.make_label("end");
                     let else_label = self.make_label("else");
 
                     self.instructions.push(Instruction::JumpIfZero {
@@ -283,9 +283,6 @@ impl TAC {
                     // JumpIfZero(c, end)
                     // <instructions_for_statement>
                     // Label(end)
-                    let result_of_condition = self.parse_val(condition);
-                    let end_label = self.make_label("end");
-
                     self.instructions.push(Instruction::JumpIfZero {
                         condition: result_of_condition,
                         target: (&end_label).into(),
