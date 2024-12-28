@@ -316,7 +316,8 @@ impl TAC {
                     let v1 = self.parse_val(*e1);
                     let v2 = self.parse_val(*e2);
 
-                    let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::And));
+                    //let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::And));
+                    let temp_label_name = Rc::new(self.make_label("and"));
 
                     self.instructions.append(
                         vec![
@@ -352,7 +353,8 @@ impl TAC {
                     let v1 = self.parse_val(*e1);
                     let v2 = self.parse_val(*e2);
 
-                    let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::Or));
+                    //let temp_label_name = Rc::new(self.make_temporary_label(BinaryOperator::Or));
+                    let temp_label_name = Rc::new(self.make_label("or"));
 
                     self.instructions.append(
                         vec![
@@ -386,7 +388,6 @@ impl TAC {
                     );
                     Val::Var(Identifier(format!("result.{}", self.label_count)))
                 }
-
                 _ => {
                     let v1 = self.parse_val(*e1);
                     let v2 = self.parse_val(*e2);
@@ -419,7 +420,48 @@ impl TAC {
                 condition,
                 exp1,
                 exp2,
-            } => todo!(),
+            } => {
+                // The expression <condition> ? <e1> : <e2> will produce:
+                //
+                // <instructions_for_condition>
+                // c = <result_of_condition>
+                // JumpIfZero(c, e2_label)
+                // <instructions_to-calculate_e1>
+                // v1 = <result_of_e1>
+                // result = v1
+                // Jump(end)
+                // Label(e2_label)
+                // <instructions_to-calculate_e2>
+                // v2 = <result_of_e2>
+                // result = v2
+                // Label(end)
+                let result_of_condition = self.parse_val(*condition);
+                let e2_label = self.make_label("exp2");
+                let end_label = self.make_label("end");
+                let result_label = self.make_label("result");
+                self.instructions.push(Instruction::JumpIfZero {
+                    condition: result_of_condition,
+                    target: (&e2_label).into(),
+                });
+                let result_of_e1 = self.parse_val(*exp1);
+                self.instructions.push(Instruction::Copy {
+                    src: result_of_e1,
+                    dst: Val::Var((&result_label).into()),
+                });
+                self.instructions.push(Instruction::Jump {
+                    target: (&end_label).into(),
+                });
+                self.instructions.push(Instruction::Label(e2_label.into()));
+                let result_of_e2 = self.parse_val(*exp2);
+                self.instructions.push(Instruction::Copy {
+                    src: result_of_e2,
+                    dst: Val::Var((&result_label).into()),
+                });
+                self.instructions
+                    .push(Instruction::Label((&end_label).into()));
+
+                Val::Var((&result_label).into())
+            }
         }
     }
 
@@ -439,6 +481,10 @@ impl TAC {
 
     fn make_label(&mut self, prefix: &str) -> String {
         self.label_count += 1;
-        format!("{prefix}{}", self.label_count)
+        match prefix {
+            "and" => format!("and_false.{}", self.label_count),
+            "or" => format!("or_false.{}", self.label_count),
+            _ => format!("{prefix}{}", self.label_count),
+        }
     }
 }
