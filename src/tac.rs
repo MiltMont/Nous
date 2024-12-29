@@ -3,6 +3,7 @@ use std::{fmt::Debug, fs, path::PathBuf};
 use crate::{
     ast::{self, BinaryOperator, Declaration, Identifier},
     parser::Parser,
+    visitor::VariableResolution,
 };
 
 /// A three address code program representation.
@@ -130,7 +131,13 @@ pub struct TAC {
 
 impl From<String> for TAC {
     fn from(value: String) -> Self {
-        let source = Parser::from(value).to_ast_program().expect("XD");
+        let mut source = Parser::from(value)
+            .to_ast_program()
+            .expect("Should return a program");
+        let mut validate = VariableResolution::from(source.clone());
+        validate.pass().unwrap();
+        source.0.body = validate.get_updated_block_items().unwrap();
+
         Self {
             source,
             temp_count: 0,
@@ -174,15 +181,14 @@ impl TAC {
     }
 
     fn parse_function(&mut self, function: ast::Function) -> Function {
-        todo!()
-        //for block in function.body {
-        //    self.process_block(block);
-        //}
-        //
-        //Function {
-        //    identifier: function.name,
-        //    body: self.instructions.clone(),
-        //}
+        for block in function.body.0 {
+            self.process_block(block);
+        }
+
+        Function {
+            identifier: function.name,
+            body: self.instructions.clone(),
+        }
     }
 
     fn process_block(&mut self, block: ast::BlockItem) {
@@ -279,13 +285,20 @@ impl TAC {
                         target: (&end_label).into(),
                     });
 
-                    let instructions_for_statement = self.parse_statement(*then)?;
-                    self.instructions.push(instructions_for_statement);
+                    let instructions_for_statement = self.parse_statement(*then);
+                    if let Some(instructions) = instructions_for_statement {
+                        self.instructions.push(instructions);
+                    }
                     self.instructions.push(Instruction::Label(end_label.into()));
                 };
                 None
             }
-            ast::Statement::Compound(block) => todo!(),
+            ast::Statement::Compound(block) => {
+                for item in block.0 {
+                    self.process_block(item);
+                }
+                None
+            }
         }
     }
 
