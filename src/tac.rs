@@ -299,6 +299,25 @@ impl TAC {
                 }
                 None
             }
+            ast::Statement::Break { label } => todo!(),
+            ast::Statement::Continue { label } => todo!(),
+            ast::Statement::While {
+                condition,
+                body,
+                identifier,
+            } => todo!(),
+            ast::Statement::DoWhile {
+                body,
+                condition,
+                identifier,
+            } => todo!(),
+            ast::Statement::For {
+                initializer,
+                condition,
+                post,
+                body,
+                identifier,
+            } => todo!(),
         }
     }
 

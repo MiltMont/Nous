@@ -72,6 +72,12 @@ pub enum Expression {
     },
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum ForInit {
+    InitDecl(Declaration),
+    InitExp(Option<Expression>),
+}
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum Statement {
     Return(Expression),
@@ -87,6 +93,31 @@ pub enum Statement {
     Null,
     /// Represents compount statements.
     Compound(Block),
+    /// Labels are optinal to avoid creating dummy labels
+    /// during parsing.  
+    Break {
+        label: Option<Identifier>,
+    },
+    Continue {
+        label: Option<Identifier>,
+    },
+    While {
+        condition: Expression,
+        body: Box<Statement>,
+        identifier: Option<Identifier>,
+    },
+    DoWhile {
+        body: Box<Statement>,
+        condition: Expression,
+        identifier: Option<Identifier>,
+    },
+    For {
+        initializer: ForInit,
+        condition: Option<Expression>,
+        post: Option<Expression>,
+        body: Box<Statement>,
+        identifier: Option<Identifier>,
+    },
 }
 
 #[derive(PartialEq, Clone, Hash, Eq)]

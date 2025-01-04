@@ -429,6 +429,7 @@ impl VariableResolution {
         }
     }
 
+    #[allow(unused_variables)]
     fn resolve_statement(
         &mut self,
         statement: ast::Statement,
@@ -465,6 +466,25 @@ impl VariableResolution {
                     self.resolve_block(block, &mut new_variable_map)?,
                 ))
             }
+            ast::Statement::Break { label } => todo!(),
+            ast::Statement::Continue { label } => todo!(),
+            ast::Statement::While {
+                condition,
+                body,
+                identifier,
+            } => todo!(),
+            ast::Statement::DoWhile {
+                body,
+                condition,
+                identifier,
+            } => todo!(),
+            ast::Statement::For {
+                initializer,
+                condition,
+                post,
+                body,
+                identifier,
+            } => todo!(),
         }
     }
 
