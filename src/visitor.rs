@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     assembly::{Assembly, BinaryOperator, Instruction, Instructions, Operand, Program, Reg},
-    ast::{self, Block, Declaration, Identifier},
+    ast::{self, Block, Declaration, Expression, ForInit, Identifier},
     errors::{Error, Result},
 };
 
@@ -295,7 +295,6 @@ impl AssemblyPass {
 /// identifier.
 pub struct VariableResolution {
     block_items: ast::BlockItems,
-    variable_map: VariableMap,
     offset: usize,
 }
 
@@ -311,8 +310,8 @@ impl Debug for VariableResolution {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Variable Resolution: \nblock_items: {:#?}\n\nvariables_map: {:#?}",
-            &self.block_items, &self.variable_map
+            "Variable Resolution: \nblock_items: {:#?}",
+            &self.block_items,
         )
     }
 }
@@ -321,7 +320,6 @@ impl From<ast::Program> for VariableResolution {
     fn from(value: ast::Program) -> Self {
         VariableResolution {
             block_items: value.0.body.0,
-            variable_map: HashMap::new(),
             offset: 0,
         }
     }
@@ -384,7 +382,7 @@ impl VariableResolution {
     fn resolve_expression(
         &self,
         expression: ast::Expression,
-        variable_map: &mut VariableMap,
+        variable_map: &VariableMap,
     ) -> Result<ast::Expression> {
         match expression {
             ast::Expression::Assignment(left, right) => {
@@ -433,7 +431,7 @@ impl VariableResolution {
     fn resolve_statement(
         &mut self,
         statement: ast::Statement,
-        variable_map: &mut VariableMap,
+        variable_map: &VariableMap,
     ) -> Result<ast::Statement> {
         match statement {
             ast::Statement::Return(e) => Ok(ast::Statement::Return(
@@ -466,25 +464,70 @@ impl VariableResolution {
                     self.resolve_block(block, &mut new_variable_map)?,
                 ))
             }
-            ast::Statement::Break { label } => todo!(),
-            ast::Statement::Continue { label } => todo!(),
+            ast::Statement::Break { label } => Ok(ast::Statement::Break { label }),
+            ast::Statement::Continue { label } => Ok(ast::Statement::Continue { label }),
             ast::Statement::While {
                 condition,
                 body,
                 identifier,
-            } => todo!(),
+            } => Ok(ast::Statement::While {
+                condition: self.resolve_expression(condition, variable_map)?,
+                body: Box::new(self.resolve_statement(*body, variable_map)?),
+                identifier,
+            }),
             ast::Statement::DoWhile {
                 body,
                 condition,
                 identifier,
-            } => todo!(),
+            } => Ok(ast::Statement::DoWhile {
+                body: Box::new(self.resolve_statement(*body, variable_map)?),
+                condition: self.resolve_expression(condition, variable_map)?,
+                identifier,
+            }),
             ast::Statement::For {
                 initializer,
                 condition,
                 post,
                 body,
                 identifier,
-            } => todo!(),
+            } => {
+                let mut new_vaiable_map = self.copy_variable_map(variable_map);
+
+                Ok(ast::Statement::For {
+                    initializer: self.resolve_for_init(initializer, &mut new_vaiable_map)?,
+                    condition: self.resolve_optional_expression(condition, &new_vaiable_map)?,
+                    post: self.resolve_optional_expression(post, &new_vaiable_map)?,
+                    body: Box::new(self.resolve_statement(*body, &new_vaiable_map)?),
+                    identifier,
+                })
+            }
+        }
+    }
+
+    fn resolve_optional_expression(
+        &self,
+        expression: Option<Expression>,
+        variable_map: &VariableMap,
+    ) -> Result<Option<Expression>> {
+        if let Some(expression) = expression {
+            Ok(Some(self.resolve_expression(expression, variable_map)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn resolve_for_init(
+        &mut self,
+        initializer: ForInit,
+        variable_map: &mut VariableMap,
+    ) -> Result<ForInit> {
+        match initializer {
+            ForInit::InitDecl(declaration) => Ok(ForInit::InitDecl(
+                self.resolve_declaration(declaration, variable_map)?,
+            )),
+            ForInit::InitExp(expression) => Ok(ForInit::InitExp(
+                self.resolve_optional_expression(expression, variable_map)?,
+            )),
         }
     }
 
@@ -505,42 +548,26 @@ impl VariableResolution {
         Ok(Block(items))
     }
 
-    //pub fn pass(&mut self) -> Result<&mut Self> {
-    //    let blocks: ast::BlockItems = self.block_items.clone();
-    //    let mut new_blocks = Vec::new();
-    //    for block in blocks {
-    //        new_blocks.push(match block {
-    //            ast::BlockItem::S(statement) => {
-    //                ast::BlockItem::S(self.resolve_statement(statement)?)
-    //            }
-    //            ast::BlockItem::D(declaration) => {
-    //                ast::BlockItem::D(self.resolve_declaration(declaration)?)
-    //            }
-    //        })
-    //    }
-    //    self.block_items = new_blocks;
-    //    Ok(self)
-    //}
     pub fn pass(&mut self) -> Result<&mut Self> {
         self.block_items = self.get_updated_block_items()?.0;
         Ok(self)
     }
 
-    /// Creates a copy of `self.variable_map` with the `from_current_block`
+    /// Creates a copy of `variable_map` with the `from_current_block`
     /// property set to false for every entry.
-    fn copy_variable_map(&self, variable_map: &mut VariableMap) -> VariableMap {
-        let mut new_map = HashMap::new();
-
-        for (identifier, variable_info) in variable_map {
-            new_map.insert(
-                identifier.clone(),
-                VariableInfo {
-                    name: variable_info.name.clone(),
-                    from_current_block: false,
-                },
-            );
-        }
-
-        new_map
+    fn copy_variable_map(&self, variable_map: &VariableMap) -> VariableMap {
+        dbg!(&variable_map);
+        variable_map
+            .iter()
+            .map(|(value, info)| {
+                (
+                    value.clone(),
+                    VariableInfo {
+                        name: info.name.clone(),
+                        from_current_block: false,
+                    },
+                )
+            })
+            .collect()
     }
 }
