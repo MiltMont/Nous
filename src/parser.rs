@@ -579,6 +579,30 @@ impl Parser {
                     self.error_expected(Token::While, Some("Within `parse_statement`".into()))
                 }
             }
+            // "for" "(" <for-init> [ <exp> ] ";" [ <exp> ] ")" <statement>
+            Token::For => {
+                self.next_token();
+                if self.current_token_is(&Token::LParen) {
+                    self.next_token();
+                    let initializer = self.parse_for_init()?;
+                    let condition = self.parse_optional_expression(&Token::Semicolon)?;
+                    self.next_token();
+                    let post = self.parse_optional_expression(&Token::RParen)?;
+                    self.next_token();
+
+                    let body = Box::new(self.parse_statement()?);
+
+                    Ok(ast::Statement::For {
+                        initializer,
+                        condition,
+                        post,
+                        body,
+                        identifier: None,
+                    })
+                } else {
+                    self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
+                }
+            }
             _ => {
                 let expression = self.parse_expression(0)?;
 
@@ -595,6 +619,27 @@ impl Parser {
                     })
                 }
             }
+        }
+    }
+
+    fn parse_optional_expression(&mut self, delimiter: &Token) -> Result<Option<ast::Expression>> {
+        if self.current_token_is(delimiter) {
+            Ok(None)
+        } else {
+            let expression = self.parse_expression(0)?;
+            self.next_token();
+            Ok(Some(expression))
+        }
+    }
+
+    /// <for-init> ::= <declaration> | [ <exp> ] ";"
+    fn parse_for_init(&mut self) -> Result<ast::ForInit> {
+        if self.current_token_is(&Token::Int) {
+            Ok(ast::ForInit::InitDecl(self.parse_declaration()?))
+        } else {
+            Ok(ast::ForInit::InitExp(
+                self.parse_optional_expression(&Token::Semicolon)?,
+            ))
         }
     }
 
