@@ -586,10 +586,7 @@ impl Parser {
                     self.next_token();
                     let initializer = self.parse_for_init()?;
                     let condition = self.parse_optional_expression(&Token::Semicolon)?;
-                    self.next_token();
                     let post = self.parse_optional_expression(&Token::RParen)?;
-                    self.next_token();
-
                     let body = Box::new(self.parse_statement()?);
 
                     Ok(ast::Statement::For {
@@ -622,13 +619,25 @@ impl Parser {
         }
     }
 
+    /// If a delimiter is found then it is skiped and returns `None`.
+    /// If no delimiter is found then we parse the existing expression
+    /// and advance the token stream until we skip the delimiter.
     fn parse_optional_expression(&mut self, delimiter: &Token) -> Result<Option<ast::Expression>> {
         if self.current_token_is(delimiter) {
+            self.next_token();
             Ok(None)
         } else {
             let expression = self.parse_expression(0)?;
             self.next_token();
-            Ok(Some(expression))
+            if self.current_token_is(delimiter) {
+                self.next_token();
+                Ok(Some(expression))
+            } else {
+                self.error_expected(
+                    delimiter.clone(),
+                    Some("Within `parse_optional_expression".into()),
+                )
+            }
         }
     }
 
@@ -643,7 +652,8 @@ impl Parser {
         }
     }
 
-    fn error_expected(&self, expected: Token, message: Option<String>) -> Result<ast::Statement> {
+    /// Returns an error message whenever an expected token is not found.
+    fn error_expected<T>(&self, expected: Token, message: Option<String>) -> Result<T> {
         Err(Error::UnexpectedToken {
             message,
             expected,
