@@ -418,7 +418,12 @@ impl Parser {
     /// <statement> ::== "return" <exp> ";"
     ///             | <exp> ";"
     ///             | "if" "(" <exp> ")" <statement> ["else" <statement>]
-    ///             | Compound(block)
+    ///             | <block>
+    ///             | "break" ;
+    ///             | "continue" ;
+    ///             | "while" "(" <exp> ")" <statement
+    ///             | "do" <statement> "while" "(" <exp> ")" ";"
+    ///             | "for" "(" <for-init> [ <exp> ] ";" [ <exp> ] ")" <statement>
     ///             | ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         match &self.current_token {
@@ -484,6 +489,57 @@ impl Parser {
                 self.next_token();
                 Ok(ast::Statement::Compound(block))
             }
+            // "break" ;
+            Token::Break => {
+                self.next_token();
+
+                if self.current_token_is(&Token::Semicolon) {
+                    self.next_token();
+                    Ok(ast::Statement::Break { label: None })
+                } else {
+                    Err(Error::UnexpectedToken {
+                        message: Some("Within `parse_statement`".into()),
+                        expected: Token::Semicolon,
+                        found: self.current_token.clone(),
+                    })
+                }
+            }
+            // "continue" ";"
+            Token::Continue => {
+                self.next_token();
+
+                if self.current_token_is(&Token::Semicolon) {
+                    self.next_token();
+                    Ok(ast::Statement::Continue { label: None })
+                } else {
+                    Err(Error::UnexpectedToken {
+                        message: Some("Within `parse_statement`".into()),
+                        expected: Token::Semicolon,
+                        found: self.current_token.clone(),
+                    })
+                }
+            }
+            // "while" "(" <exp> ")" <statement>
+            Token::While => {
+                self.next_token();
+                if self.current_token_is(&Token::LParen) {
+                    let condition = self.parse_expression(0)?;
+                    if self.current_token_is(&Token::RParen) {
+                        self.next_token();
+                        let body = Box::new(self.parse_statement()?);
+
+                        Ok(ast::Statement::While {
+                            condition,
+                            body,
+                            identifier: None,
+                        })
+                    } else {
+                        self.error_expected(Token::RParen, Some("Within `parse_statement`".into()))
+                    }
+                } else {
+                    self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
+                }
+            }
             _ => {
                 let expression = self.parse_expression(0)?;
 
@@ -501,6 +557,14 @@ impl Parser {
                 }
             }
         }
+    }
+
+    fn error_expected(&self, expected: Token, message: Option<String>) -> Result<ast::Statement> {
+        Err(Error::UnexpectedToken {
+            message,
+            expected,
+            found: self.current_token.clone(),
+        })
     }
 
     /// Returns true if the current token is a
