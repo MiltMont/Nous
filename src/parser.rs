@@ -540,6 +540,45 @@ impl Parser {
                     self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
                 }
             }
+            // "do" <statement> "while" "(" <exp> ")" ";"
+            Token::Do => {
+                self.next_token();
+
+                let body = Box::new(self.parse_statement()?);
+
+                if self.current_token_is(&Token::While) {
+                    self.next_token();
+                    if self.current_token_is(&Token::LParen) {
+                        let condition = self.parse_expression(0)?;
+
+                        if self.current_token_is(&Token::RParen) {
+                            self.next_token();
+                            if self.current_token_is(&Token::Semicolon) {
+                                self.next_token();
+                                Ok(ast::Statement::DoWhile {
+                                    body,
+                                    condition,
+                                    identifier: None,
+                                })
+                            } else {
+                                self.error_expected(
+                                    Token::Semicolon,
+                                    Some("Within `parse_stateement`".into()),
+                                )
+                            }
+                        } else {
+                            self.error_expected(
+                                Token::RParen,
+                                Some("Within `parse_stateement`".into()),
+                            )
+                        }
+                    } else {
+                        self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
+                    }
+                } else {
+                    self.error_expected(Token::While, Some("Within `parse_statement`".into()))
+                }
+            }
             _ => {
                 let expression = self.parse_expression(0)?;
 
