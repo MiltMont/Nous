@@ -132,7 +132,7 @@ impl Parser {
                     return Err(Error::UnexpectedToken {
                         expected: token.clone(),
                         found: self.current_token.clone(),
-                        message: Some("within `parse_function`".into()),
+                        message: Some("within `parse_function`"),
                     });
                 } else {
                     self.next_token();
@@ -149,7 +149,7 @@ impl Parser {
             Err(Error::UnexpectedToken {
                 expected: Token::Int,
                 found: self.current_token.clone(),
-                message: Some("Within `parse_function`".into()),
+                message: Some("Within `parse_function`"),
             })
         }
     }
@@ -168,7 +168,7 @@ impl Parser {
             Ok(Block(blocks))
         } else {
             Err(Error::UnexpectedToken {
-                message: Some("Within `parse_block`".into()),
+                message: Some("Within `parse_block`"),
                 expected: Token::LBrace,
                 found: self.current_token.clone(),
             })
@@ -214,7 +214,7 @@ impl Parser {
                     return Ok(ast::Declaration { name, initializer });
                 } else {
                     return Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_declaration`".into()),
+                        message: Some("Within `parse_declaration`"),
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
                     });
@@ -231,14 +231,14 @@ impl Parser {
                 })
             } else {
                 Err(Error::UnexpectedToken {
-                    message: Some("Within `parse_declaration`".into()),
+                    message: Some("Within `parse_declaration`"),
                     expected: Token::Semicolon,
                     found: self.current_token.clone(),
                 })
             }
         } else {
             Err(Error::UnexpectedToken {
-                message: Some("Within `parse_declaration`".into()),
+                message: Some("Within `parse_declaration`"),
                 expected: Token::Int,
                 found: self.current_token.clone(),
             })
@@ -362,14 +362,14 @@ impl Parser {
                 Ok(expression?)
             } else {
                 Err(Error::UnexpectedToken {
-                    message: Some("Within `parse_conditional_middle`".into()),
+                    message: Some("Within `parse_conditional_middle`"),
                     expected: Token::Colon,
                     found: self.current_token.clone(),
                 })
             }
         } else {
             Err(Error::UnexpectedToken {
-                message: Some("Within `parse_conditional_statement`".into()),
+                message: Some("Within `parse_conditional_statement`"),
                 expected: Token::QuestionMark,
                 found: self.current_token.clone(),
             })
@@ -440,7 +440,7 @@ impl Parser {
                     Err(Error::UnexpectedToken {
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
-                        message: Some("Within `parse_statement`".into()),
+                        message: Some("Within `parse_statement`"),
                     })
                 }
             }
@@ -470,14 +470,14 @@ impl Parser {
                         })
                     } else {
                         Err(Error::UnexpectedToken {
-                            message: Some("Within `parse_statement`".into()),
+                            message: Some("Within `parse_statement`"),
                             expected: Token::RParen,
                             found: self.current_token.clone(),
                         })
                     }
                 } else {
                     Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_statement`".into()),
+                        message: Some("Within `parse_statement`"),
                         expected: Token::LParen,
                         found: self.current_token.clone(),
                     })
@@ -498,7 +498,7 @@ impl Parser {
                     Ok(ast::Statement::Break { label: None })
                 } else {
                     Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_statement`".into()),
+                        message: Some("Within `parse_statement`"),
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
                     })
@@ -513,7 +513,7 @@ impl Parser {
                     Ok(ast::Statement::Continue { label: None })
                 } else {
                     Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_statement`".into()),
+                        message: Some("Within `parse_statement`"),
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
                     })
@@ -534,10 +534,10 @@ impl Parser {
                             identifier: None,
                         })
                     } else {
-                        self.error_expected(Token::RParen, Some("Within `parse_statement`".into()))
+                        self.error_expected(Token::RParen, Some("Within `parse_statement`"))
                     }
                 } else {
-                    self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
+                    self.error_expected(Token::LParen, Some("Within `parse_statement`"))
                 }
             }
             // "do" <statement> "while" "(" <exp> ")" ";"
@@ -563,20 +563,17 @@ impl Parser {
                             } else {
                                 self.error_expected(
                                     Token::Semicolon,
-                                    Some("Within `parse_stateement`".into()),
+                                    Some("Within `parse_stateement`"),
                                 )
                             }
                         } else {
-                            self.error_expected(
-                                Token::RParen,
-                                Some("Within `parse_stateement`".into()),
-                            )
+                            self.error_expected(Token::RParen, Some("Within `parse_stateement`"))
                         }
                     } else {
-                        self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
+                        self.error_expected(Token::LParen, Some("Within `parse_statement`"))
                     }
                 } else {
-                    self.error_expected(Token::While, Some("Within `parse_statement`".into()))
+                    self.error_expected(Token::While, Some("Within `parse_statement`"))
                 }
             }
             // "for" "(" <for-init> [ <exp> ] ";" [ <exp> ] ")" <statement>
@@ -597,7 +594,7 @@ impl Parser {
                         identifier: None,
                     })
                 } else {
-                    self.error_expected(Token::LParen, Some("Within `parse_statement`".into()))
+                    self.error_expected(Token::LParen, Some("Within `parse_statement`"))
                 }
             }
             _ => {
@@ -612,7 +609,7 @@ impl Parser {
                     Err(Error::UnexpectedToken {
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
-                        message: Some("Within `parse_statement`".into()),
+                        message: Some("Within `parse_statement`"),
                     })
                 }
             }
@@ -633,10 +630,7 @@ impl Parser {
                 self.next_token();
                 Ok(Some(expression))
             } else {
-                self.error_expected(
-                    delimiter.clone(),
-                    Some("Within `parse_optional_expression".into()),
-                )
+                self.error_expected(delimiter.clone(), Some("Within `parse_optional_expression"))
             }
         }
     }
@@ -653,7 +647,7 @@ impl Parser {
     }
 
     /// Returns an error message whenever an expected token is not found.
-    fn error_expected<T>(&self, expected: Token, message: Option<String>) -> Result<T> {
+    fn error_expected<T>(&self, expected: Token, message: Option<&'static str>) -> Result<T> {
         Err(Error::UnexpectedToken {
             message,
             expected,
