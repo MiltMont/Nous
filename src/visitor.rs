@@ -571,3 +571,16 @@ impl VariableResolution {
             .collect()
     }
 }
+
+pub trait VisitorWithIdentifier<T> {
+    fn visit(&mut self, item: &mut T, identifier: Option<Identifier>);
+}
+
+pub fn apply_visitor<T, V>(vec: &mut [T], mut visitor: V)
+where
+    V: VisitorWithIdentifier<T>,
+{
+    for item in vec.iter_mut() {
+        visitor.visit(item, None);
+    }
+}

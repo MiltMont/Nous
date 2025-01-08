@@ -1,10 +1,11 @@
 use crate::assembly::Assembly;
 use crate::errors::Result;
 use crate::lexer::Token;
+use crate::loop_labeling::LoopLabeling;
 use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
-use crate::visitor::{AssemblyPass, VariableResolution};
+use crate::visitor::{apply_visitor, AssemblyPass, VariableResolution};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
@@ -326,6 +327,12 @@ impl CompilerDriver {
             semantic_analysis.pass()?;
 
             println!("{semantic_analysis:?}");
+
+            let mut updated_blocks = semantic_analysis.get_updated_block_items().unwrap().0;
+
+            apply_visitor(&mut updated_blocks, LoopLabeling::default());
+
+            println!("{updated_blocks:?}");
 
             Ok(())
         } else {

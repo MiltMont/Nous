@@ -3,6 +3,7 @@ pub mod ast;
 pub mod compiler_driver;
 pub mod errors;
 pub mod lexer;
+pub mod loop_labeling;
 pub mod parser;
 pub mod tac;
 pub mod utils;
