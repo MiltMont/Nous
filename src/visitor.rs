@@ -34,3 +34,13 @@ where
     visitor.visit(vec);
     eprint!("\n{visitor:#?}\n\n\t{:?}\n", &vec);
 }
+
+pub fn visit_collection_with_context<T, V, C>(vec: &mut Vec<T>, mut visitor: V, context: &mut C)
+where
+    T: Debug,
+    V: VisitorWithContext<Vec<T>, C> + Debug,
+{
+    visitor.visit(vec, context);
+    eprint!("\n{visitor:?}\n");
+    eprint!("\n{vec:?}\n\n");
+}

@@ -6,6 +6,7 @@ use crate::{
 };
 
 /// Pushes a new AllocateStack to the front of the instruction stream.
+#[derive(Debug)]
 pub struct AllocateStack;
 
 impl VisitorWithContext<assembly::Instructions, i64> for AllocateStack {

@@ -1,5 +1,7 @@
 use crate::assembly::Assembly;
-use crate::assembly_passes::{ReplacePseudoRegisters, RewriteBinaryOp, RewriteCmp, RewriteMov};
+use crate::assembly_passes::{
+    AllocateStack, ReplacePseudoRegisters, RewriteBinaryOp, RewriteCmp, RewriteMov,
+};
 use crate::errors::Result;
 use crate::lexer::Token;
 use crate::loop_labeling::LoopLabeling;
@@ -7,7 +9,7 @@ use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
 use crate::variable_resolution::VariableResolution as VarRes;
-use crate::visitor::{apply_visitor_with_context, visit_collection};
+use crate::visitor::{apply_visitor_with_context, visit_collection, visit_collection_with_context};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
@@ -137,6 +139,11 @@ impl CompilerDriver {
             visit_collection(
                 &mut assembly.program.as_mut().unwrap().0.instructions,
                 RewriteCmp,
+            );
+            visit_collection_with_context(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                AllocateStack,
+                &mut assembly.offset.clone(),
             );
             //let mut assembly_pass = AssemblyPass::build(assembly);
             //assembly_pass
@@ -309,6 +316,11 @@ impl CompilerDriver {
                 &mut assembly.program.as_mut().unwrap().0.instructions,
                 RewriteCmp,
             );
+            visit_collection_with_context(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                AllocateStack,
+                &mut assembly.offset.clone(),
+            );
 
             //let mut visitor = AssemblyPass::build(assembly);
             //visitor.print_instructions(Some("Original instructions"));
@@ -353,6 +365,11 @@ impl CompilerDriver {
             visit_collection(
                 &mut assembly.program.as_mut().unwrap().0.instructions,
                 RewriteCmp,
+            );
+            visit_collection_with_context(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                AllocateStack,
+                &mut assembly.offset.clone(),
             );
             //let mut visitor = AssemblyPass::build(assembly);
             //visitor
