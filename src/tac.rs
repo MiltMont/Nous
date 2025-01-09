@@ -324,7 +324,40 @@ impl TAC {
                 condition,
                 body,
                 identifier,
-            } => todo!(),
+            } => {
+                //Label(continue_label)
+                //<instructions for condition>
+                //v = <result of condition>
+                //JumpIfZero(v, break_label)
+                //<instructions for body>
+                //Jump(continue_label)
+                //Label(break_label)
+                let continue_label: Identifier =
+                    format!("continue_{}", identifier.as_ref().unwrap().0.clone()).into();
+                let break_label: Identifier =
+                    format!("break_{}", identifier.as_ref().unwrap().0.clone()).into();
+
+                self.instructions
+                    .push(Instruction::Label(continue_label.clone()));
+
+                let instructions_for_condition = self.parse_val(condition);
+                self.instructions.push(Instruction::JumpIfZero {
+                    condition: instructions_for_condition,
+                    target: break_label.clone(),
+                });
+
+                if let Some(instructions_for_body) = self.parse_statement(*body) {
+                    self.instructions.push(instructions_for_body);
+                }
+
+                self.instructions.push(Instruction::Jump {
+                    target: continue_label,
+                });
+
+                self.instructions.push(Instruction::Label(break_label));
+
+                None
+            }
             ast::Statement::DoWhile {
                 body,
                 condition,
