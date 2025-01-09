@@ -299,8 +299,24 @@ impl TAC {
                 }
                 None
             }
-            ast::Statement::Break { label } => todo!(),
-            ast::Statement::Continue { label } => todo!(),
+            ast::Statement::Break { label } => {
+                // Since loop labeling is applied we
+                // can guarantee that this is Some()
+                // HACK: Should I push into instructions or return?
+                self.instructions.push(Instruction::Jump {
+                    target: format!("break_{}", label.unwrap().0).into(),
+                });
+                None
+            }
+            ast::Statement::Continue { label } => {
+                // Since loop labeling is applied we
+                // can guarantee that this is Some()
+                // HACK: Should I push into instructions or return?
+                self.instructions.push(Instruction::Jump {
+                    target: format!("continue_{}", label.unwrap().0).into(),
+                });
+                None
+            }
             ast::Statement::While {
                 condition,
                 body,

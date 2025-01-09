@@ -5,22 +5,13 @@ use crate::{
 
 #[derive(Default)]
 pub struct LoopLabeling {
-    pub current_label: Option<Identifier>,
     offset: i32,
 }
 
 impl LoopLabeling {
-    pub fn annotate(&self) -> ast::Identifier {
-        if let Some(label) = &self.current_label {
-            label.clone()
-        } else {
-            panic!("No current label")
-        }
-    }
-
-    pub fn make_label(&mut self) -> ast::Identifier {
+    pub fn make_label(&mut self, prefix: &str) -> ast::Identifier {
         self.offset += 1;
-        format!("label.{}", self.offset).into()
+        format!("{}.{}", prefix, self.offset).into()
     }
 }
 
@@ -38,7 +29,7 @@ impl VisitorWithContext<ast::Statement, Option<Identifier>> for LoopLabeling {
                 if current_label.is_some() {
                     *label = current_label.clone();
                 } else {
-                    panic!("NOOO")
+                    panic!("Continue statement outside of a loop")
                 }
             }
             Statement::While {
@@ -47,7 +38,7 @@ impl VisitorWithContext<ast::Statement, Option<Identifier>> for LoopLabeling {
                 identifier,
             } => {
                 // Modify current label to be a generated label.
-                let current_label = self.make_label();
+                let current_label = self.make_label("while");
                 // Modify while identifier.
                 *identifier = Some(current_label.clone());
                 // Visit the body.
@@ -59,7 +50,7 @@ impl VisitorWithContext<ast::Statement, Option<Identifier>> for LoopLabeling {
                 identifier,
             } => {
                 // Create a new label
-                let current_label = self.make_label();
+                let current_label = self.make_label("do_while");
                 // Modify identifier
                 *identifier = Some(current_label.clone());
                 // Visit bodyh
@@ -73,7 +64,7 @@ impl VisitorWithContext<ast::Statement, Option<Identifier>> for LoopLabeling {
                 identifier,
             } => {
                 // Create a new label
-                let current_label = self.make_label();
+                let current_label = self.make_label("for");
                 // Modify identifier
                 *identifier = Some(current_label.clone());
                 // Visit body
