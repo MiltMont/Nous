@@ -5,10 +5,12 @@ use crate::loop_labeling::LoopLabeling;
 use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
-use crate::visitor::{apply_visitor, AssemblyPass, VariableResolution};
+use crate::variable_resolution::VariableResolution as VarRes;
+use crate::visitor::{apply_visitor_with_context, AssemblyPass};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{self, prelude::*};
 use std::path::{Path, PathBuf};
@@ -321,18 +323,12 @@ impl CompilerDriver {
     fn validate(&self) -> Result<()> {
         if self.file_path.exists() {
             let mut parser = Parser::from(self.file_path.clone());
-            let ast = parser.to_ast_program()?;
+            let mut ast = parser.to_ast_program()?;
 
-            let mut semantic_analysis = VariableResolution::from(ast);
-            semantic_analysis.pass()?;
+            apply_visitor_with_context(&mut ast.0.body.0, VarRes::default(), &mut HashMap::new());
+            apply_visitor_with_context(&mut ast.0.body.0, LoopLabeling::default(), &mut None);
 
-            println!("{semantic_analysis:?}");
-
-            let mut updated_blocks = semantic_analysis.get_updated_block_items().unwrap().0;
-
-            apply_visitor(&mut updated_blocks, LoopLabeling::default());
-
-            println!("{updated_blocks:?}");
+            println!("{ast:?}");
 
             Ok(())
         } else {

@@ -572,15 +572,28 @@ impl VariableResolution {
     }
 }
 
-pub trait VisitorWithIdentifier<T> {
-    fn visit(&mut self, item: &mut T, identifier: Option<Identifier>);
+pub trait Visitor<T> {
+    fn visit(&mut self, item: &mut T);
 }
 
 pub fn apply_visitor<T, V>(vec: &mut [T], mut visitor: V)
 where
-    V: VisitorWithIdentifier<T>,
+    V: Visitor<T>,
 {
     for item in vec.iter_mut() {
-        visitor.visit(item, None);
+        visitor.visit(item);
+    }
+}
+
+pub trait VisitorWithContext<T, C> {
+    fn visit(&mut self, item: &mut T, context: &mut C);
+}
+
+pub fn apply_visitor_with_context<T, V, C>(vec: &mut [T], mut visitor: V, context: &mut C)
+where
+    V: VisitorWithContext<T, C>,
+{
+    for item in vec.iter_mut() {
+        visitor.visit(item, context);
     }
 }

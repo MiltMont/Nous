@@ -1,6 +1,6 @@
 use crate::{
     ast::{self, Identifier, Statement},
-    visitor::VisitorWithIdentifier,
+    visitor::VisitorWithContext,
 };
 
 #[derive(Default)]
@@ -24,8 +24,8 @@ impl LoopLabeling {
     }
 }
 
-impl VisitorWithIdentifier<ast::Statement> for LoopLabeling {
-    fn visit(&mut self, item: &mut ast::Statement, current_label: Option<Identifier>) {
+impl VisitorWithContext<ast::Statement, Option<Identifier>> for LoopLabeling {
+    fn visit(&mut self, item: &mut ast::Statement, current_label: &mut Option<Identifier>) {
         match item {
             Statement::Break { label } => {
                 if current_label.is_some() {
@@ -51,7 +51,7 @@ impl VisitorWithIdentifier<ast::Statement> for LoopLabeling {
                 // Modify while identifier.
                 *identifier = Some(current_label.clone());
                 // Visit the body.
-                self.visit(&mut **body, Some(current_label));
+                self.visit(&mut **body, &mut Some(current_label));
             }
             Statement::DoWhile {
                 body,
@@ -63,7 +63,7 @@ impl VisitorWithIdentifier<ast::Statement> for LoopLabeling {
                 // Modify identifier
                 *identifier = Some(current_label.clone());
                 // Visit bodyh
-                self.visit(&mut **body, Some(current_label));
+                self.visit(&mut **body, &mut Some(current_label));
             }
             Statement::For {
                 initializer: _,
@@ -77,21 +77,21 @@ impl VisitorWithIdentifier<ast::Statement> for LoopLabeling {
                 // Modify identifier
                 *identifier = Some(current_label.clone());
                 // Visit body
-                self.visit(&mut **body, Some(current_label));
+                self.visit(&mut **body, &mut Some(current_label));
             }
             Statement::If {
                 condition: _,
                 then,
                 else_statement,
             } => {
-                self.visit(&mut **then, current_label.clone());
+                self.visit(&mut **then, current_label);
                 if let Some(else_stm) = else_statement {
                     self.visit(&mut **else_stm, current_label);
                 }
             }
             Statement::Compound(block) => {
                 for item in block.0.iter_mut() {
-                    self.visit(item, current_label.clone());
+                    self.visit(item, current_label);
                 }
             }
             _ => {}
@@ -99,8 +99,8 @@ impl VisitorWithIdentifier<ast::Statement> for LoopLabeling {
     }
 }
 
-impl VisitorWithIdentifier<ast::BlockItem> for LoopLabeling {
-    fn visit(&mut self, item: &mut ast::BlockItem, ident: Option<Identifier>) {
+impl VisitorWithContext<ast::BlockItem, Option<Identifier>> for LoopLabeling {
+    fn visit(&mut self, item: &mut ast::BlockItem, ident: &mut Option<Identifier>) {
         match item {
             ast::BlockItem::S(statement) => self.visit(statement, ident),
             ast::BlockItem::D(_) => {}

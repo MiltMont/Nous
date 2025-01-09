@@ -7,4 +7,5 @@ pub mod loop_labeling;
 pub mod parser;
 pub mod tac;
 pub mod utils;
+pub mod variable_resolution;
 pub mod visitor;
