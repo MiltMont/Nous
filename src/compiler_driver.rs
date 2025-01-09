@@ -1,19 +1,13 @@
 use crate::assembly::Assembly;
-use crate::assembly_passes::{
-    AllocateStack, ReplacePseudoRegisters, RewriteBinaryOp, RewriteCmp, RewriteMov,
-};
 use crate::errors::Result;
 use crate::lexer::Token;
-use crate::loop_labeling::LoopLabeling;
 use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
-use crate::variable_resolution::VariableResolution as VarRes;
-use crate::visitor::{apply_visitor_with_context, visit_collection, visit_collection_with_context};
+use crate::visitor::{assembly_passes, validation_passes};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
-use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{self, prelude::*};
 use std::path::{Path, PathBuf};
@@ -123,37 +117,7 @@ impl CompilerDriver {
             // Parsing the assembly program.
             assembly.parse_program();
             // Visiting the program
-            apply_visitor_with_context(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                ReplacePseudoRegisters,
-                &mut assembly.pseudo_registers,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteMov,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteBinaryOp,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteCmp,
-            );
-            visit_collection_with_context(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                AllocateStack,
-                &mut assembly.offset.clone(),
-            );
-            //let mut assembly_pass = AssemblyPass::build(assembly);
-            //assembly_pass
-            //    .replace_pseudo_registers()
-            //    .rewrite_binop()
-            //    .rewrite_mov()
-            //    .allocate_stack();
-            //
-            //let assembly_program = assembly_pass.modify_program();
-            //println!("{:?}", assembly_program);
+            assembly_passes(&mut assembly);
             let output_path = output_assembler
                 .clone()
                 .into_os_string()
@@ -299,28 +263,7 @@ impl CompilerDriver {
             assembly.parse_program();
 
             // Visiting the program
-            apply_visitor_with_context(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                ReplacePseudoRegisters,
-                &mut assembly.pseudo_registers,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteMov,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteBinaryOp,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteCmp,
-            );
-            visit_collection_with_context(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                AllocateStack,
-                &mut assembly.offset.clone(),
-            );
+            assembly_passes(&mut assembly);
 
             //let mut visitor = AssemblyPass::build(assembly);
             //visitor.print_instructions(Some("Original instructions"));
@@ -349,38 +292,7 @@ impl CompilerDriver {
             let mut assembly = Assembly::from(self.file_path.clone());
             assembly.parse_program();
             // Visiting the program
-            apply_visitor_with_context(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                ReplacePseudoRegisters,
-                &mut assembly.pseudo_registers,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteMov,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteBinaryOp,
-            );
-            visit_collection(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                RewriteCmp,
-            );
-            visit_collection_with_context(
-                &mut assembly.program.as_mut().unwrap().0.instructions,
-                AllocateStack,
-                &mut assembly.offset.clone(),
-            );
-            //let mut visitor = AssemblyPass::build(assembly);
-            //visitor
-            //    .replace_pseudo_registers()
-            //    .rewrite_mov()
-            //    .rewrite_binop()
-            //    .rewrite_cmp()
-            //    .allocate_stack();
-            //
-            //let assembly_program = visitor.modify_program();
-            //println!("{}", assembly_program.format());
+            assembly_passes(&mut assembly);
             println!("{}", assembly.program.unwrap().format());
 
             Ok(())
@@ -397,9 +309,7 @@ impl CompilerDriver {
             let mut parser = Parser::from(self.file_path.clone());
             let mut ast = parser.to_ast_program()?;
 
-            apply_visitor_with_context(&mut ast.0.body.0, VarRes::default(), &mut HashMap::new());
-            apply_visitor_with_context(&mut ast.0.body.0, LoopLabeling::default(), &mut None);
-
+            validation_passes(&mut ast);
             println!("{ast:?}");
 
             Ok(())

@@ -1,4 +1,14 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
+
+use crate::{
+    assembly::Assembly,
+    assembly_passes::{
+        AllocateStack, ReplacePseudoRegisters, RewriteBinaryOp, RewriteCmp, RewriteMov,
+    },
+    ast::Program,
+    loop_labeling::LoopLabeling,
+    variable_resolution::VariableResolution,
+};
 
 pub trait Visitor<T> {
     fn visit(&mut self, item: &mut T);
@@ -43,4 +53,38 @@ where
     visitor.visit(vec, context);
     eprint!("\n{visitor:?}\n");
     eprint!("\n{vec:?}\n\n");
+}
+
+pub fn assembly_passes(assembly: &mut Assembly) {
+    apply_visitor_with_context(
+        &mut assembly.program.as_mut().unwrap().0.instructions,
+        ReplacePseudoRegisters,
+        &mut assembly.pseudo_registers,
+    );
+    visit_collection(
+        &mut assembly.program.as_mut().unwrap().0.instructions,
+        RewriteMov,
+    );
+    visit_collection(
+        &mut assembly.program.as_mut().unwrap().0.instructions,
+        RewriteBinaryOp,
+    );
+    visit_collection(
+        &mut assembly.program.as_mut().unwrap().0.instructions,
+        RewriteCmp,
+    );
+    visit_collection_with_context(
+        &mut assembly.program.as_mut().unwrap().0.instructions,
+        AllocateStack,
+        &mut assembly.offset.clone(),
+    );
+}
+
+pub fn validation_passes(program: &mut Program) {
+    apply_visitor_with_context(
+        &mut program.0.body.0,
+        VariableResolution::default(),
+        &mut HashMap::new(),
+    );
+    apply_visitor_with_context(&mut program.0.body.0, LoopLabeling::default(), &mut None);
 }
