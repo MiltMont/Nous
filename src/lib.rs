@@ -1,4 +1,5 @@
 pub mod assembly;
+pub mod assembly_passes;
 pub mod ast;
 pub mod compiler_driver;
 pub mod errors;
