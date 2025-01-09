@@ -259,17 +259,20 @@ impl TAC {
                         target: (&else_label).into(),
                     });
 
-                    let instructions_for_statement1 = self.parse_statement(*then)?;
-                    self.instructions.push(instructions_for_statement1);
+                    if let Some(instructions_for_statement1) = self.parse_statement(*then) {
+                        self.instructions.push(instructions_for_statement1);
+                    }
+
                     self.instructions.push(Instruction::Jump {
                         target: (&end_label).into(),
                     });
                     self.instructions
                         .push(Instruction::Label(else_label.into()));
-                    let instructions_for_statement2 = self.parse_statement(*else_stmt);
-                    if let Some(instruction) = instructions_for_statement2 {
-                        self.instructions.push(instruction);
+
+                    if let Some(instructions_for_statement2) = self.parse_statement(*else_stmt) {
+                        self.instructions.push(instructions_for_statement2);
                     }
+
                     self.instructions.push(Instruction::Label(end_label.into()));
                 } else {
                     // A statement of the form `if(<condition>) then <statement>`
@@ -326,7 +329,34 @@ impl TAC {
                 body,
                 condition,
                 identifier,
-            } => todo!(),
+            } => {
+                //Label(start)
+                //<instructions for body>
+                //Label(continue_label)
+                //<instructions for condition>
+                //v = <result of condition>
+                //JumpIfNotZero(v, start)
+                //Label(break_label)
+                let start: Identifier =
+                    format!("start_{}", identifier.as_ref().unwrap().0.clone()).into();
+                self.instructions.push(Instruction::Label(start.clone()));
+                if let Some(instructions_for_body) = self.parse_statement(*body) {
+                    self.instructions.push(instructions_for_body);
+                }
+                self.instructions.push(Instruction::Label(
+                    format!("continue_{}", identifier.as_ref().unwrap().0.clone()).into(),
+                ));
+                let instructions_for_condition = self.parse_val(condition);
+                self.instructions.push(Instruction::JumpIfNotZero {
+                    condition: instructions_for_condition,
+                    target: start,
+                });
+                self.instructions.push(Instruction::Label(
+                    format!("break_{}", identifier.as_ref().unwrap().0.clone()).into(),
+                ));
+
+                None
+            }
             ast::Statement::For {
                 initializer,
                 condition,
