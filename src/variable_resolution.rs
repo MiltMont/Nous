@@ -5,6 +5,18 @@ use crate::{
     visitor::VisitorWithContext,
 };
 
+/// This takes an ast program an performs variable
+/// resolution on its block items.
+///
+/// This pass tracks which variables are in
+/// scope throughout the program and resolves each reference to
+/// a variable by finding the corresponding declaration.
+///
+/// It reports an error if a program declares the same variable
+/// more than once or uses a variable that hasn't been delcared.
+///
+/// It renames each local variable with a globally unique
+/// identifier.
 #[derive(Default, Debug)]
 pub struct VariableResolution {
     offset: usize,
@@ -145,8 +157,10 @@ impl VisitorWithContext<Expression, VariableMap> for VariableResolution {
         match expression {
             Expression::Constant(_) => {}
             Expression::Var(identifier) => {
-                if !variable_map.contains_key(identifier) {
-                    panic!("Undeclared variable")
+                if let Some(variable_info) = variable_map.get(identifier) {
+                    *identifier = variable_info.name.clone().into();
+                } else {
+                    panic!("Undeclared variable");
                 }
             }
             Expression::Unary(_unary_operator, expression) => {
