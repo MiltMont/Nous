@@ -1,4 +1,5 @@
 use crate::assembly::Assembly;
+use crate::assembly_passes::{ReplacePseudoRegisters, RewriteBinaryOp, RewriteCmp, RewriteMov};
 use crate::errors::Result;
 use crate::lexer::Token;
 use crate::loop_labeling::LoopLabeling;
@@ -6,7 +7,7 @@ use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
 use crate::variable_resolution::VariableResolution as VarRes;
-use crate::visitor::{apply_visitor_with_context, AssemblyPass};
+use crate::visitor::{apply_visitor_with_context, visit_collection};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
@@ -119,16 +120,33 @@ impl CompilerDriver {
             let mut assembly = Assembly::from(file);
             // Parsing the assembly program.
             assembly.parse_program();
-            // Realizing the assembly passes.
-            let mut assembly_pass = AssemblyPass::build(assembly);
-            assembly_pass
-                .replace_pseudo_registers()
-                .rewrite_binop()
-                .rewrite_mov()
-                .allocate_stack();
-
-            let assembly_program = assembly_pass.modify_program();
-            println!("{:?}", assembly_program);
+            // Visiting the program
+            apply_visitor_with_context(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                ReplacePseudoRegisters,
+                &mut assembly.pseudo_registers,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteMov,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteBinaryOp,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteCmp,
+            );
+            //let mut assembly_pass = AssemblyPass::build(assembly);
+            //assembly_pass
+            //    .replace_pseudo_registers()
+            //    .rewrite_binop()
+            //    .rewrite_mov()
+            //    .allocate_stack();
+            //
+            //let assembly_program = assembly_pass.modify_program();
+            //println!("{:?}", assembly_program);
             let output_path = output_assembler
                 .clone()
                 .into_os_string()
@@ -145,7 +163,7 @@ impl CompilerDriver {
                 Ok(file) => file,
             };
 
-            match file.write_all(assembly_program.format().as_bytes()) {
+            match file.write_all(assembly.program.unwrap().format().as_bytes()) {
                 Err(why) => panic!("couldn't write to {}: {}", display, why),
                 Ok(_) => println!("successfully wrote to {}", display),
             }
@@ -274,16 +292,34 @@ impl CompilerDriver {
             assembly.parse_program();
 
             // Visiting the program
-            let mut visitor = AssemblyPass::build(assembly);
-            visitor.print_instructions(Some("Original instructions"));
-            visitor.replace_pseudo_registers();
-            visitor.print_instructions(Some("Replacing pseudo registers"));
-            visitor.rewrite_mov();
-            visitor.print_instructions(Some("Rewriting move instructions"));
-            visitor.rewrite_binop();
-            visitor.print_instructions(Some("Rewriting binary operators"));
-            visitor.rewrite_cmp();
-            visitor.print_instructions(Some("Rewriting cmp operators"));
+            apply_visitor_with_context(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                ReplacePseudoRegisters,
+                &mut assembly.pseudo_registers,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteMov,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteBinaryOp,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteCmp,
+            );
+
+            //let mut visitor = AssemblyPass::build(assembly);
+            //visitor.print_instructions(Some("Original instructions"));
+            //visitor.replace_pseudo_registers();
+            //visitor.print_instructions(Some("Replacing pseudo registers"));
+            //visitor.rewrite_mov();
+            //visitor.print_instructions(Some("Rewriting move instructions"));
+            //visitor.rewrite_binop();
+            //visitor.print_instructions(Some("Rewriting binary operators"));
+            //visitor.rewrite_cmp();
+            //visitor.print_instructions(Some("Rewriting cmp operators"));
 
             Ok(())
         } else {
@@ -300,16 +336,35 @@ impl CompilerDriver {
         if self.file_path.exists() {
             let mut assembly = Assembly::from(self.file_path.clone());
             assembly.parse_program();
-            let mut visitor = AssemblyPass::build(assembly);
-            visitor
-                .replace_pseudo_registers()
-                .rewrite_mov()
-                .rewrite_binop()
-                .rewrite_cmp()
-                .allocate_stack();
-
-            let assembly_program = visitor.modify_program();
-            println!("{}", assembly_program.format());
+            // Visiting the program
+            apply_visitor_with_context(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                ReplacePseudoRegisters,
+                &mut assembly.pseudo_registers,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteMov,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteBinaryOp,
+            );
+            visit_collection(
+                &mut assembly.program.as_mut().unwrap().0.instructions,
+                RewriteCmp,
+            );
+            //let mut visitor = AssemblyPass::build(assembly);
+            //visitor
+            //    .replace_pseudo_registers()
+            //    .rewrite_mov()
+            //    .rewrite_binop()
+            //    .rewrite_cmp()
+            //    .allocate_stack();
+            //
+            //let assembly_program = visitor.modify_program();
+            //println!("{}", assembly_program.format());
+            println!("{}", assembly.program.unwrap().format());
 
             Ok(())
         } else {

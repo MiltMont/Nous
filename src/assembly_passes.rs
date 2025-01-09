@@ -32,6 +32,7 @@ impl VisitorWithContext<assembly::Instructions, i64> for AllocateStack {
 ///
 /// 3. Whenever `idiv` needs to operate on a constant, we copy that constant into
 ///     the `R10` register first.
+#[derive(Debug)]
 pub struct RewriteBinaryOp;
 
 impl Visitor<assembly::Instructions> for RewriteBinaryOp {
@@ -100,6 +101,7 @@ impl Visitor<assembly::Instructions> for RewriteBinaryOp {
 /// The `cmp` instruction can't use memory addresses for
 /// both operands, also the second operand of a `cmp`
 /// instruction can't be a constant either.
+#[derive(Debug)]
 pub struct RewriteCmp;
 
 impl Visitor<assembly::Instructions> for RewriteCmp {
@@ -132,6 +134,9 @@ impl Visitor<assembly::Instructions> for RewriteCmp {
     }
 }
 
+/// Rewrites move instructions, whenever both `src` and `dst`
+/// are Stack operands.
+#[derive(Debug)]
 pub struct RewriteMov;
 
 impl Visitor<assembly::Instructions> for RewriteMov {
@@ -176,6 +181,38 @@ impl ReplacePseudoRegisters {
     }
 }
 
+impl VisitorWithContext<assembly::Instruction, HashMap<Operand, i64>> for ReplacePseudoRegisters {
+    fn visit(
+        &mut self,
+        instruction: &mut assembly::Instruction,
+        pseudo_registers: &mut HashMap<Operand, i64>,
+    ) {
+        match instruction {
+            Instruction::Mov { src, dst } => {
+                *src = self.get_stack_value(src, pseudo_registers);
+                *dst = self.get_stack_value(dst, pseudo_registers);
+            }
+            Instruction::Unary(_unary_operator, operand) => {
+                *operand = self.get_stack_value(operand, pseudo_registers);
+            }
+            Instruction::Binary(_binary_operator, operand, operand1) => {
+                *operand = self.get_stack_value(operand, pseudo_registers);
+                *operand1 = self.get_stack_value(operand1, pseudo_registers);
+            }
+            Instruction::Idiv(operand) => {
+                *operand = self.get_stack_value(operand, pseudo_registers)
+            }
+            Instruction::Cmp(operand, operand1) => {
+                *operand = self.get_stack_value(operand, pseudo_registers);
+                *operand1 = self.get_stack_value(operand1, pseudo_registers);
+            }
+            Instruction::SetCC(_cond_code, operand) => {
+                *operand = self.get_stack_value(operand, pseudo_registers);
+            }
+            _ => {}
+        }
+    }
+}
 impl VisitorWithContext<assembly::Instructions, HashMap<Operand, i64>> for ReplacePseudoRegisters {
     fn visit(
         &mut self,
