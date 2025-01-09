@@ -1,11 +1,9 @@
-use std::{collections::HashMap, fmt::Debug, fs, path::PathBuf};
+use std::{fmt::Debug, fs, path::PathBuf};
 
 use crate::{
     ast::{self, BinaryOperator, Declaration, Identifier},
-    loop_labeling::LoopLabeling,
     parser::Parser,
-    variable_resolution::VariableResolution,
-    visitor::apply_visitor_with_context,
+    visitor::validation_passes,
 };
 
 /// A three address code program representation.
@@ -138,12 +136,7 @@ impl From<String> for TAC {
             .expect("Should return a program");
 
         // Validation passes are performed
-        apply_visitor_with_context(
-            &mut source.0.body.0,
-            VariableResolution::default(),
-            &mut HashMap::new(),
-        );
-        apply_visitor_with_context(&mut source.0.body.0, LoopLabeling::default(), &mut None);
+        validation_passes(&mut source);
 
         Self {
             source,
