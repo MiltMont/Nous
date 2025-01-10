@@ -333,9 +333,9 @@ impl TAC {
                 //Jump(continue_label)
                 //Label(break_label)
                 let continue_label: Identifier =
-                    format!("continue_{}", identifier.as_ref().unwrap().0.clone()).into();
+                    format!("continue_{}", identifier.as_ref().unwrap().0).into();
                 let break_label: Identifier =
-                    format!("break_{}", identifier.as_ref().unwrap().0.clone()).into();
+                    format!("break_{}", identifier.as_ref().unwrap().0).into();
 
                 self.instructions
                     .push(Instruction::Label(continue_label.clone()));
@@ -370,14 +370,13 @@ impl TAC {
                 //v = <result of condition>
                 //JumpIfNotZero(v, start)
                 //Label(break_label)
-                let start: Identifier =
-                    format!("start_{}", identifier.as_ref().unwrap().0.clone()).into();
+                let start: Identifier = format!("start_{}", identifier.as_ref().unwrap().0).into();
                 self.instructions.push(Instruction::Label(start.clone()));
                 if let Some(instructions_for_body) = self.parse_statement(*body) {
                     self.instructions.push(instructions_for_body);
                 }
                 self.instructions.push(Instruction::Label(
-                    format!("continue_{}", identifier.as_ref().unwrap().0.clone()).into(),
+                    format!("continue_{}", identifier.as_ref().unwrap().0).into(),
                 ));
                 let instructions_for_condition = self.parse_val(condition);
                 self.instructions.push(Instruction::JumpIfNotZero {
@@ -385,7 +384,7 @@ impl TAC {
                     target: start,
                 });
                 self.instructions.push(Instruction::Label(
-                    format!("break_{}", identifier.as_ref().unwrap().0.clone()).into(),
+                    format!("break_{}", identifier.as_ref().unwrap().0).into(),
                 ));
 
                 None
@@ -396,7 +395,52 @@ impl TAC {
                 post,
                 body,
                 identifier,
-            } => todo!(),
+            } => {
+                //  First we process the initializer
+                match initializer {
+                    ast::ForInit::InitDecl(declaration) => {
+                        self.process_declaration(declaration);
+                    }
+                    ast::ForInit::InitExp(expression) => {
+                        if let Some(exp) = expression {
+                            self.parse_val(exp);
+                        }
+                    }
+                }
+
+                let start: Identifier = format!("start_{}", identifier.as_ref().unwrap().0).into();
+                let break_label: Identifier =
+                    format!("break_{}", identifier.as_ref().unwrap().0).into();
+                let continue_label: Identifier =
+                    format!("continue_{}", identifier.unwrap().0).into();
+
+                self.instructions.push(Instruction::Label(start.clone()));
+
+                let result_of_condition = condition.map(|condition| self.parse_val(condition));
+
+                if let Some(val) = result_of_condition {
+                    self.instructions.push(Instruction::JumpIfZero {
+                        condition: val,
+                        target: break_label.clone(),
+                    });
+                }
+
+                if let Some(instructions_for_body) = self.parse_statement(*body) {
+                    self.instructions.push(instructions_for_body);
+                }
+
+                self.instructions.push(Instruction::Label(continue_label));
+
+                if let Some(post) = post {
+                    self.parse_val(post);
+                }
+
+                self.instructions.push(Instruction::Jump { target: start });
+
+                self.instructions.push(Instruction::Label(break_label));
+
+                None
+            }
         }
     }
 
