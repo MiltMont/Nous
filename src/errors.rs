@@ -14,7 +14,7 @@ pub enum Error {
     /// Parser errors
     #[error("{message:?}. \n\tUnexpected token. Expected {expected:?}, but found {found:?}")]
     UnexpectedToken {
-        message: Option<String>,
+        message: Option<&'static str>,
         expected: Token,
         found: Token,
     },

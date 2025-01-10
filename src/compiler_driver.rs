@@ -4,7 +4,7 @@ use crate::lexer::Token;
 use crate::parser::Parser;
 use crate::tac;
 use crate::tac::TAC;
-use crate::visitor::{AssemblyPass, VariableResolution};
+use crate::visitor::{assembly_passes, validation_passes};
 use clap::{Parser as ClapParser, Subcommand};
 use logos::Logos;
 use miette::Result as MResult;
@@ -116,16 +116,8 @@ impl CompilerDriver {
             let mut assembly = Assembly::from(file);
             // Parsing the assembly program.
             assembly.parse_program();
-            // Realizing the assembly passes.
-            let mut assembly_pass = AssemblyPass::build(assembly);
-            assembly_pass
-                .replace_pseudo_registers()
-                .rewrite_binop()
-                .rewrite_mov()
-                .allocate_stack();
-
-            let assembly_program = assembly_pass.modify_program();
-            println!("{:?}", assembly_program);
+            // Visiting the program
+            assembly_passes(&mut assembly);
             let output_path = output_assembler
                 .clone()
                 .into_os_string()
@@ -142,7 +134,7 @@ impl CompilerDriver {
                 Ok(file) => file,
             };
 
-            match file.write_all(assembly_program.format().as_bytes()) {
+            match file.write_all(assembly.program.unwrap().format().as_bytes()) {
                 Err(why) => panic!("couldn't write to {}: {}", display, why),
                 Ok(_) => println!("successfully wrote to {}", display),
             }
@@ -271,16 +263,18 @@ impl CompilerDriver {
             assembly.parse_program();
 
             // Visiting the program
-            let mut visitor = AssemblyPass::build(assembly);
-            visitor.print_instructions(Some("Original instructions"));
-            visitor.replace_pseudo_registers();
-            visitor.print_instructions(Some("Replacing pseudo registers"));
-            visitor.rewrite_mov();
-            visitor.print_instructions(Some("Rewriting move instructions"));
-            visitor.rewrite_binop();
-            visitor.print_instructions(Some("Rewriting binary operators"));
-            visitor.rewrite_cmp();
-            visitor.print_instructions(Some("Rewriting cmp operators"));
+            assembly_passes(&mut assembly);
+
+            //let mut visitor = AssemblyPass::build(assembly);
+            //visitor.print_instructions(Some("Original instructions"));
+            //visitor.replace_pseudo_registers();
+            //visitor.print_instructions(Some("Replacing pseudo registers"));
+            //visitor.rewrite_mov();
+            //visitor.print_instructions(Some("Rewriting move instructions"));
+            //visitor.rewrite_binop();
+            //visitor.print_instructions(Some("Rewriting binary operators"));
+            //visitor.rewrite_cmp();
+            //visitor.print_instructions(Some("Rewriting cmp operators"));
 
             Ok(())
         } else {
@@ -297,16 +291,9 @@ impl CompilerDriver {
         if self.file_path.exists() {
             let mut assembly = Assembly::from(self.file_path.clone());
             assembly.parse_program();
-            let mut visitor = AssemblyPass::build(assembly);
-            visitor
-                .replace_pseudo_registers()
-                .rewrite_mov()
-                .rewrite_binop()
-                .rewrite_cmp()
-                .allocate_stack();
-
-            let assembly_program = visitor.modify_program();
-            println!("{}", assembly_program.format());
+            // Visiting the program
+            assembly_passes(&mut assembly);
+            println!("{}", assembly.program.unwrap().format());
 
             Ok(())
         } else {
@@ -320,12 +307,10 @@ impl CompilerDriver {
     fn validate(&self) -> Result<()> {
         if self.file_path.exists() {
             let mut parser = Parser::from(self.file_path.clone());
-            let ast = parser.to_ast_program()?;
+            let mut ast = parser.to_ast_program()?;
 
-            let mut semantic_analysis = VariableResolution::from(ast);
-            semantic_analysis.pass()?;
-
-            println!("{semantic_analysis:?}");
+            validation_passes(&mut ast);
+            println!("{ast:?}");
 
             Ok(())
         } else {

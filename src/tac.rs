@@ -3,6 +3,7 @@ use std::{fmt::Debug, fs, path::PathBuf};
 use crate::{
     ast::{self, BinaryOperator, Declaration, Identifier},
     parser::Parser,
+    visitor::validation_passes,
 };
 
 /// A three address code program representation.
@@ -130,7 +131,13 @@ pub struct TAC {
 
 impl From<String> for TAC {
     fn from(value: String) -> Self {
-        let source = Parser::from(value).to_ast_program().expect("XD");
+        let mut source = Parser::from(value)
+            .to_ast_program()
+            .expect("Should return a program");
+
+        // Validation passes are performed
+        validation_passes(&mut source);
+
         Self {
             source,
             temp_count: 0,
@@ -174,17 +181,7 @@ impl TAC {
     }
 
     fn parse_function(&mut self, function: ast::Function) -> Function {
-        // self.instructions = Vec::new();
-        // // let ret = self.parse_statement(function.body);
-        // let ret = self.parse_statement(todo!());
-        //
-        // self.instructions.push(ret);
-
-        // For each block we push the parsed block into the
-        // instructions.
-        // self.instructions = Vec::from_iter(function.body.into_iter().map(|x| self.parse_block(x)));
-
-        for block in function.body {
+        for block in function.body.0 {
             self.process_block(block);
         }
 
@@ -262,17 +259,20 @@ impl TAC {
                         target: (&else_label).into(),
                     });
 
-                    let instructions_for_statement1 = self.parse_statement(*then)?;
-                    self.instructions.push(instructions_for_statement1);
+                    if let Some(instructions_for_statement1) = self.parse_statement(*then) {
+                        self.instructions.push(instructions_for_statement1);
+                    }
+
                     self.instructions.push(Instruction::Jump {
                         target: (&end_label).into(),
                     });
                     self.instructions
                         .push(Instruction::Label(else_label.into()));
-                    let instructions_for_statement2 = self.parse_statement(*else_stmt);
-                    if let Some(instruction) = instructions_for_statement2 {
-                        self.instructions.push(instruction);
+
+                    if let Some(instructions_for_statement2) = self.parse_statement(*else_stmt) {
+                        self.instructions.push(instructions_for_statement2);
                     }
+
                     self.instructions.push(Instruction::Label(end_label.into()));
                 } else {
                     // A statement of the form `if(<condition>) then <statement>`
@@ -288,10 +288,157 @@ impl TAC {
                         target: (&end_label).into(),
                     });
 
-                    let instructions_for_statement = self.parse_statement(*then)?;
-                    self.instructions.push(instructions_for_statement);
+                    let instructions_for_statement = self.parse_statement(*then);
+                    if let Some(instructions) = instructions_for_statement {
+                        self.instructions.push(instructions);
+                    }
                     self.instructions.push(Instruction::Label(end_label.into()));
                 };
+                None
+            }
+            ast::Statement::Compound(block) => {
+                for item in block.0 {
+                    self.process_block(item);
+                }
+                None
+            }
+            ast::Statement::Break { label } => {
+                // Since loop labeling is applied we
+                // can guarantee that this is Some()
+                // HACK: Should I push into instructions or return?
+                self.instructions.push(Instruction::Jump {
+                    target: format!("break_{}", label.unwrap().0).into(),
+                });
+                None
+            }
+            ast::Statement::Continue { label } => {
+                // Since loop labeling is applied we
+                // can guarantee that this is Some()
+                // HACK: Should I push into instructions or return?
+                self.instructions.push(Instruction::Jump {
+                    target: format!("continue_{}", label.unwrap().0).into(),
+                });
+                None
+            }
+            ast::Statement::While {
+                condition,
+                body,
+                identifier,
+            } => {
+                //Label(continue_label)
+                //<instructions for condition>
+                //v = <result of condition>
+                //JumpIfZero(v, break_label)
+                //<instructions for body>
+                //Jump(continue_label)
+                //Label(break_label)
+                let continue_label: Identifier =
+                    format!("continue_{}", identifier.as_ref().unwrap().0).into();
+                let break_label: Identifier =
+                    format!("break_{}", identifier.as_ref().unwrap().0).into();
+
+                self.instructions
+                    .push(Instruction::Label(continue_label.clone()));
+
+                let instructions_for_condition = self.parse_val(condition);
+                self.instructions.push(Instruction::JumpIfZero {
+                    condition: instructions_for_condition,
+                    target: break_label.clone(),
+                });
+
+                if let Some(instructions_for_body) = self.parse_statement(*body) {
+                    self.instructions.push(instructions_for_body);
+                }
+
+                self.instructions.push(Instruction::Jump {
+                    target: continue_label,
+                });
+
+                self.instructions.push(Instruction::Label(break_label));
+
+                None
+            }
+            ast::Statement::DoWhile {
+                body,
+                condition,
+                identifier,
+            } => {
+                //Label(start)
+                //<instructions for body>
+                //Label(continue_label)
+                //<instructions for condition>
+                //v = <result of condition>
+                //JumpIfNotZero(v, start)
+                //Label(break_label)
+                let start: Identifier = format!("start_{}", identifier.as_ref().unwrap().0).into();
+                self.instructions.push(Instruction::Label(start.clone()));
+                if let Some(instructions_for_body) = self.parse_statement(*body) {
+                    self.instructions.push(instructions_for_body);
+                }
+                self.instructions.push(Instruction::Label(
+                    format!("continue_{}", identifier.as_ref().unwrap().0).into(),
+                ));
+                let instructions_for_condition = self.parse_val(condition);
+                self.instructions.push(Instruction::JumpIfNotZero {
+                    condition: instructions_for_condition,
+                    target: start,
+                });
+                self.instructions.push(Instruction::Label(
+                    format!("break_{}", identifier.as_ref().unwrap().0).into(),
+                ));
+
+                None
+            }
+            ast::Statement::For {
+                initializer,
+                condition,
+                post,
+                body,
+                identifier,
+            } => {
+                //  First we process the initializer
+                match initializer {
+                    ast::ForInit::InitDecl(declaration) => {
+                        self.process_declaration(declaration);
+                    }
+                    ast::ForInit::InitExp(expression) => {
+                        if let Some(exp) = expression {
+                            self.parse_val(exp);
+                        }
+                    }
+                }
+
+                let start: Identifier = format!("start_{}", identifier.as_ref().unwrap().0).into();
+                let break_label: Identifier =
+                    format!("break_{}", identifier.as_ref().unwrap().0).into();
+                let continue_label: Identifier =
+                    format!("continue_{}", identifier.unwrap().0).into();
+
+                self.instructions.push(Instruction::Label(start.clone()));
+
+                let result_of_condition = condition.map(|condition| self.parse_val(condition));
+
+                if let Some(val) = result_of_condition {
+                    self.instructions.push(Instruction::JumpIfZero {
+                        condition: val,
+                        target: break_label.clone(),
+                    });
+                }
+
+                if let Some(instructions_for_body) = self.parse_statement(*body) {
+                    self.instructions.push(instructions_for_body);
+                }
+
+                self.instructions.push(Instruction::Label(continue_label));
+
+                if let Some(post) = post {
+                    self.parse_val(post);
+                }
+
+                self.instructions.push(Instruction::Jump { target: start });
+
+                self.instructions.push(Instruction::Label(break_label));
+
                 None
             }
         }

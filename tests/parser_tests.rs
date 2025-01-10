@@ -1,6 +1,6 @@
 use nous::{
     ast::{
-        BinaryOperator, BlockItem, Declaration, Expression, Function, Identifier, Program,
+        BinaryOperator, Block, BlockItem, Declaration, Expression, Function, Identifier, Program,
         Statement, UnaryOperator,
     },
     utils::parser_from_path,
@@ -19,9 +19,9 @@ fn test_unary() {
 
     let expected_program = Program(Function {
         name: "main".into(),
-        body: vec![BlockItem::S(nous::ast::Statement::Return(
+        body: nous::ast::Block(vec![BlockItem::S(nous::ast::Statement::Return(
             expected_expression,
-        ))],
+        ))]),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program)
@@ -48,9 +48,9 @@ fn test_same_precedence() {
     let expected_program = Program(nous::ast::Function {
         name: "main".into(),
         // body: nous::ast::Statement::Return(expected_expression),
-        body: vec![BlockItem::S(nous::ast::Statement::Return(
+        body: nous::ast::Block(vec![BlockItem::S(nous::ast::Statement::Return(
             expected_expression,
-        ))],
+        ))]),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
@@ -76,9 +76,9 @@ fn test_different_precedences() {
 
     let expected_program = Program(nous::ast::Function {
         name: "main".into(),
-        body: vec![BlockItem::S(nous::ast::Statement::Return(
+        body: nous::ast::Block(vec![BlockItem::S(nous::ast::Statement::Return(
             expected_expression,
-        ))],
+        ))]),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program)
@@ -98,7 +98,7 @@ fn test_expression() {
 
     let expected_program = Program(Function {
         name: "main".into(),
-        body: expected_body,
+        body: nous::ast::Block(expected_body),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program)
@@ -115,7 +115,7 @@ fn test_no_expression() {
 
     let expected_program = Program(Function {
         name: "main".into(),
-        body: expected_body,
+        body: Block(expected_body),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
@@ -139,7 +139,7 @@ fn test_mixed_expression() {
 
     let expected_program = Program(Function {
         name: Identifier("main".into()),
-        body: expected_body,
+        body: Block(expected_body),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
@@ -171,7 +171,7 @@ fn test_expr_dec() {
 
     let exptected_program = Program(Function {
         name: "main".into(),
-        body: exptected_body,
+        body: Block(exptected_body),
     });
 
     assert_eq!(parser.to_ast_program().unwrap(), exptected_program);

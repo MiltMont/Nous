@@ -2,7 +2,6 @@ use crate::errors::{Error, Result};
 use logos::Logos;
 
 #[derive(Hash, Eq, Logos, Debug, PartialEq, Clone)]
-// TODO: Skip block comments #[logos(skip r"\/*(?:[^*]|\*[^/])*\*\/")]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")] // Skips comments
 pub enum Token {
@@ -111,6 +110,21 @@ pub enum Token {
     /// in a conditional expression
     #[token(":")]
     Colon,
+
+    #[token("do")]
+    Do,
+
+    #[token("while")]
+    While,
+
+    #[token("for")]
+    For,
+
+    #[token("break")]
+    Break,
+
+    #[token("continue")]
+    Continue,
 }
 
 impl Token {
