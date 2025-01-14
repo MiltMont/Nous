@@ -125,6 +125,9 @@ pub enum Token {
 
     #[token("continue")]
     Continue,
+
+    #[token(",")]
+    Comma,
 }
 
 impl Token {

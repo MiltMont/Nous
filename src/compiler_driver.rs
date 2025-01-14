@@ -13,6 +13,10 @@ use std::io::{self, prelude::*};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+// TODO: Change this to handle multiple files.
+// To handle multiple
+// source files, your compiler driver should convert each one to assembly sepa-
+// rately, then use the gcc command to assemble them and link them together.
 #[derive(ClapParser)]
 #[clap(author, version, about)]
 pub struct CompilerDriver {
