@@ -507,17 +507,12 @@ impl Parser {
         let mut arguments: Vec<ast::Expression> = Vec::new();
 
         arguments.push(self.parse_expression(0)?);
-        self.next_token();
 
         while !self.current_token_is(&Token::RParen) {
             arguments.push(self.expect_token_then(
                 Token::Comma,
-                "Within `parse_argument_list`",
-                |parser| {
-                    let result = parser.parse_expression(0);
-                    parser.next_token();
-                    result
-                },
+                "Within `parse_argument_list`, parsing parameters.",
+                |parser| parser.parse_expression(0),
             )?)
         }
 
@@ -632,11 +627,9 @@ impl Parser {
 
                 let body = Box::new(self.parse_statement()?);
 
-                let condition =
-                    self.parse_parenthesized("Within `parse_statement`, parsing DO", |parser| {
-                        let result = parser.parse_expression(0);
-                        parser.next_token();
-                        result
+                let condition = self
+                    .parse_parenthesized("Within `parse_statement`, parsing DO", |parser| {
+                        parser.parse_expression(0)
                     })?;
 
                 Ok(ast::Statement::While {
