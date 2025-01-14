@@ -204,35 +204,28 @@ impl Parser {
     /// Parses:
     /// `<variable-declaration> ::= "int" <identifier> [ "=" <exp> ] ";"`
     fn parse_variable_declaration(&mut self) -> Result<ast::VariableDeclaration> {
-        let name = self.expect_token_then(
+        let (name, initializer) = self.parse_delimited(
             Token::Int,
-            "Within `parse_variable_declaration`, parsing identifier",
-            |parser| parser.parse_identifier(),
+            Token::Semicolon,
+            "Within `parse_variable_declaration`, parsing identifier.",
+            |parser| {
+                let identifier = parser.parse_identifier()?;
+
+                let initializer = if parser.current_token_is(&Token::Assign) {
+                    Some(parser.expect_token_then(
+                        Token::Assign,
+                        "Within `parse_variable_declaration`, parsing initializer",
+                        |parser| parser.parse_expression(0),
+                    )?)
+                } else {
+                    None
+                };
+
+                Ok((identifier, initializer))
+            },
         )?;
 
-        if self.current_token_is(&Token::Assign) {
-            let initializer = Some(self.parse_delimited(
-                Token::Assign,
-                Token::Semicolon,
-                "Within `parse_variable_declaration`, parsing initializer",
-                |parser| parser.parse_expression(0),
-            )?);
-
-            Ok(ast::VariableDeclaration { name, initializer })
-        } else if self.current_token_is(&Token::Semicolon) {
-            self.next_token();
-            Ok(ast::VariableDeclaration {
-                name,
-                initializer: None,
-            })
-        } else {
-            Err(Error::UnexpectedToken {
-                message: "Within `parse_variable_declaration`, expected Initializer of Semicolon"
-                    .into(),
-                expected: Token::Semicolon,
-                found: self.current_token.clone(),
-            })
-        }
+        Ok(ast::VariableDeclaration { name, initializer })
     }
 
     /// `<function-declaration> ::= "int" <identifier> "(" <param-list> ")" ( <block> | ";")`
