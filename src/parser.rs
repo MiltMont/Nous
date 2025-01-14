@@ -324,8 +324,15 @@ impl Parser {
     }
 
     // Distinguishes between variable and function declarations.
+    //
+    // variable = "int" identifier ["=" exp] ";"
+    //
+    // or
+    //
+    // function = "int" identifier "("
     fn parse_declaration(&mut self) -> Result<ast::Declaration> {
-        if let Some(third_token) = self.tokens.get(3) {
+        dbg!(&self.tokens);
+        if let Some(third_token) = self.tokens.get(1) {
             match third_token {
                 Token::LParen => Ok(ast::Declaration::FuncDecl(
                     self.parse_function_declaration()?,
@@ -411,16 +418,12 @@ impl Parser {
     /// <exp> ::== <factor> | <exp> <binop> <exp> | <exp> "?" <exp> ":" <exp>
     fn parse_expression(&mut self, min_precedence: usize) -> Result<ast::Expression> {
         let mut left = self.parse_factor()?;
-        dbg!(&left);
-        dbg!(&self.current_token);
 
         let mut next_token = self.current_token.clone();
-        dbg!(&next_token);
 
         while self.is_binary_operator(&next_token) && next_token.precedence()? >= min_precedence {
             if matches!(next_token, Token::Assign) {
                 // HACK: Is this correct?
-                self.next_token();
                 self.next_token();
                 let right = self.parse_expression(next_token.precedence()?)?;
                 left = ast::Expression::Assignment(Box::new(left), Box::new(right));
@@ -679,7 +682,6 @@ impl Parser {
             }
             _ => {
                 let expression = self.parse_expression(0)?;
-                self.next_token();
                 dbg!(&expression);
 
                 if self.current_token_is(&Token::Semicolon) {
@@ -705,7 +707,6 @@ impl Parser {
             Ok(None)
         } else {
             let expression = self.parse_expression(0)?;
-            self.next_token();
             if self.current_token_is(delimiter) {
                 self.next_token();
                 Ok(Some(expression))
