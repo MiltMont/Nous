@@ -2,6 +2,21 @@ use crate::errors::Result;
 use crate::parser::Parser;
 use std::fmt::Debug;
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct FunctionDeclaration {
+    pub name: Identifier,
+    pub parameters: Vec<Identifier>,
+    pub body: Option<Block>,
+}
+
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+/// A variable declaration consists of a name
+/// and an optional initializer expression.
+pub struct VariableDeclaration {
+    pub name: Identifier,
+    pub initializer: Option<Expression>,
+}
+
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Block(pub BlockItems);
 
@@ -22,12 +37,10 @@ impl Debug for BlockItem {
 
 pub type BlockItems = Vec<BlockItem>;
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
-/// A declaration consists of a name
-/// and an optional initializer expression.
-pub struct Declaration {
-    pub name: Identifier,
-    pub initializer: Option<Expression>,
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Declaration {
+    FuncDecl(FunctionDeclaration),
+    VarDecl(VariableDeclaration),
 }
 
 #[derive(Hash, Debug, PartialEq, Eq, Clone)]
@@ -70,11 +83,15 @@ pub enum Expression {
         exp1: Box<Expression>,
         exp2: Box<Expression>,
     },
+    FunctionCall {
+        name: Identifier,
+        arguments: Vec<Expression>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ForInit {
-    InitDecl(Declaration),
+    InitDecl(VariableDeclaration),
     InitExp(Option<Expression>),
 }
 
@@ -153,6 +170,9 @@ impl Debug for Identifier {
     }
 }
 
+#[allow(dead_code)]
+type FuncitonDefinition = Function;
+
 #[derive(PartialEq, Clone)]
 pub struct Function {
     pub name: Identifier,
@@ -170,7 +190,7 @@ impl Debug for Function {
 }
 
 #[derive(PartialEq, Clone)]
-pub struct Program(pub Function);
+pub struct Program(pub Vec<FunctionDeclaration>);
 
 impl Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

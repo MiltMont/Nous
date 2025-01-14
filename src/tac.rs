@@ -123,7 +123,7 @@ pub enum Val {
 /// ```
 #[derive(Debug, Clone)]
 pub struct TAC {
-    source: ast::Program,
+    pub source: ast::Program,
     temp_count: usize,
     label_count: usize,
     instructions: Instructions,
@@ -175,9 +175,10 @@ impl TAC {
     }
 
     fn parse_program(&mut self) -> Program {
-        let function = self.parse_function(self.source.0.clone());
-
-        Program(function)
+        todo!()
+        //let function = self.parse_function(self.source.0.clone());
+        //
+        //Program(function)
     }
 
     fn parse_function(&mut self, function: ast::Function) -> Function {
@@ -205,15 +206,16 @@ impl TAC {
     }
 
     fn process_declaration(&mut self, declaration: Declaration) {
-        if let Some(x) = declaration.initializer {
-            // If a declaration includes an initializer,
-            // we’ll handle it like a normal variable assignment
-            let expression = ast::Expression::Assignment(
-                Box::new(ast::Expression::Var(declaration.name)),
-                Box::new(x),
-            );
-            self.parse_val(expression);
-        }
+        todo!()
+        //if let Some(x) = declaration.initializer {
+        //    // If a declaration includes an initializer,
+        //    // we’ll handle it like a normal variable assignment
+        //    let expression = ast::Expression::Assignment(
+        //        Box::new(ast::Expression::Var(declaration.name)),
+        //        Box::new(x),
+        //    );
+        //    self.parse_val(expression);
+        //}
     }
 
     fn parse_statement(&mut self, statement: ast::Statement) -> Option<Instruction> {
@@ -259,20 +261,17 @@ impl TAC {
                         target: (&else_label).into(),
                     });
 
-                    if let Some(instructions_for_statement1) = self.parse_statement(*then) {
-                        self.instructions.push(instructions_for_statement1);
-                    }
-
+                    let instructions_for_statement1 = self.parse_statement(*then)?;
+                    self.instructions.push(instructions_for_statement1);
                     self.instructions.push(Instruction::Jump {
                         target: (&end_label).into(),
                     });
                     self.instructions
                         .push(Instruction::Label(else_label.into()));
-
-                    if let Some(instructions_for_statement2) = self.parse_statement(*else_stmt) {
-                        self.instructions.push(instructions_for_statement2);
+                    let instructions_for_statement2 = self.parse_statement(*else_stmt);
+                    if let Some(instruction) = instructions_for_statement2 {
+                        self.instructions.push(instruction);
                     }
-
                     self.instructions.push(Instruction::Label(end_label.into()));
                 } else {
                     // A statement of the form `if(<condition>) then <statement>`
@@ -324,40 +323,7 @@ impl TAC {
                 condition,
                 body,
                 identifier,
-            } => {
-                //Label(continue_label)
-                //<instructions for condition>
-                //v = <result of condition>
-                //JumpIfZero(v, break_label)
-                //<instructions for body>
-                //Jump(continue_label)
-                //Label(break_label)
-                let continue_label: Identifier =
-                    format!("continue_{}", identifier.as_ref().unwrap().0).into();
-                let break_label: Identifier =
-                    format!("break_{}", identifier.as_ref().unwrap().0).into();
-
-                self.instructions
-                    .push(Instruction::Label(continue_label.clone()));
-
-                let instructions_for_condition = self.parse_val(condition);
-                self.instructions.push(Instruction::JumpIfZero {
-                    condition: instructions_for_condition,
-                    target: break_label.clone(),
-                });
-
-                if let Some(instructions_for_body) = self.parse_statement(*body) {
-                    self.instructions.push(instructions_for_body);
-                }
-
-                self.instructions.push(Instruction::Jump {
-                    target: continue_label,
-                });
-
-                self.instructions.push(Instruction::Label(break_label));
-
-                None
-            }
+            } => todo!(),
             ast::Statement::DoWhile {
                 body,
                 condition,
@@ -370,21 +336,21 @@ impl TAC {
                 //v = <result of condition>
                 //JumpIfNotZero(v, start)
                 //Label(break_label)
-                let start: Identifier = format!("start_{}", identifier.as_ref().unwrap().0).into();
+                let start: Identifier =
+                    format!("start_{}", identifier.as_ref().unwrap().0.clone()).into();
                 self.instructions.push(Instruction::Label(start.clone()));
-                if let Some(instructions_for_body) = self.parse_statement(*body) {
-                    self.instructions.push(instructions_for_body);
-                }
+                let instructions_for_body = self.parse_statement(*body)?;
+                self.instructions.push(instructions_for_body);
                 self.instructions.push(Instruction::Label(
-                    format!("continue_{}", identifier.as_ref().unwrap().0).into(),
+                    format!("continue_{}", identifier.as_ref().unwrap().0.clone()).into(),
                 ));
                 let instructions_for_condition = self.parse_val(condition);
-                self.instructions.push(Instruction::JumpIfNotZero {
+                self.instructions.push(Instruction::JumpIfZero {
                     condition: instructions_for_condition,
                     target: start,
                 });
                 self.instructions.push(Instruction::Label(
-                    format!("break_{}", identifier.as_ref().unwrap().0).into(),
+                    format!("break_{}", identifier.as_ref().unwrap().0.clone()).into(),
                 ));
 
                 None
@@ -395,52 +361,7 @@ impl TAC {
                 post,
                 body,
                 identifier,
-            } => {
-                //  First we process the initializer
-                match initializer {
-                    ast::ForInit::InitDecl(declaration) => {
-                        self.process_declaration(declaration);
-                    }
-                    ast::ForInit::InitExp(expression) => {
-                        if let Some(exp) = expression {
-                            self.parse_val(exp);
-                        }
-                    }
-                }
-
-                let start: Identifier = format!("start_{}", identifier.as_ref().unwrap().0).into();
-                let break_label: Identifier =
-                    format!("break_{}", identifier.as_ref().unwrap().0).into();
-                let continue_label: Identifier =
-                    format!("continue_{}", identifier.unwrap().0).into();
-
-                self.instructions.push(Instruction::Label(start.clone()));
-
-                let result_of_condition = condition.map(|condition| self.parse_val(condition));
-
-                if let Some(val) = result_of_condition {
-                    self.instructions.push(Instruction::JumpIfZero {
-                        condition: val,
-                        target: break_label.clone(),
-                    });
-                }
-
-                if let Some(instructions_for_body) = self.parse_statement(*body) {
-                    self.instructions.push(instructions_for_body);
-                }
-
-                self.instructions.push(Instruction::Label(continue_label));
-
-                if let Some(post) = post {
-                    self.parse_val(post);
-                }
-
-                self.instructions.push(Instruction::Jump { target: start });
-
-                self.instructions.push(Instruction::Label(break_label));
-
-                None
-            }
+            } => todo!(),
         }
     }
 
@@ -609,6 +530,7 @@ impl TAC {
 
                 Val::Var((&result_label).into())
             }
+            ast::Expression::FunctionCall { name, arguments } => todo!(),
         }
     }
 

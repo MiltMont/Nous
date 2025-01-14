@@ -1,5 +1,6 @@
 use std::{
     collections::VecDeque,
+    fmt::Debug,
     fs::{self},
     path::PathBuf,
 };
@@ -7,7 +8,7 @@ use std::{
 use logos::{Lexer, Logos};
 
 use crate::{
-    ast::{self, Block, Identifier},
+    ast::{self, Block, FunctionDeclaration, Identifier},
     errors::{Error, Result},
     lexer::Token,
 };
@@ -64,6 +65,86 @@ impl Parser {
     // token in the token stream.
     //
 
+    fn expect_token_then<F, T>(
+        &mut self,
+        expected: Token,
+        context: &'static str,
+        then: F,
+    ) -> Result<T>
+    where
+        F: FnOnce(&mut Self) -> Result<T>,
+    {
+        if self.current_token_is(&expected) {
+            self.next_token();
+            then(self)
+        } else {
+            self.error_expected(expected, context.into())
+        }
+    }
+
+    fn expect_sequence_then<F, T>(
+        &mut self,
+        expected: &[Token],
+        context: &'static str,
+        then: F,
+    ) -> Result<T>
+    where
+        F: FnOnce(&mut Self) -> Result<T>,
+    {
+        for expected_token in expected {
+            if !self.current_token_is(expected_token) {
+                return self.error_expected(expected_token.clone(), context.into());
+            }
+            self.next_token();
+        }
+        then(self)
+    }
+
+    fn parse_delimited<F, T>(
+        &mut self,
+        opening: Token,
+        closing: Token,
+        context: &'static str,
+        parse_content: F,
+    ) -> Result<T>
+    where
+        F: FnOnce(&mut Self) -> Result<T>,
+        T: Debug,
+    {
+        if !self.current_token_is(&opening) {
+            return self.error_expected(opening, context.into());
+        }
+
+        self.next_token();
+
+        // Parse the content between the delimiters.
+        let result = parse_content(self)?;
+
+        if !self.current_token_is(&closing) {
+            return self.error_expected(closing, context.into());
+        }
+
+        self.next_token();
+
+        Ok(result)
+    }
+
+    fn parse_parenthesized<F, T>(&mut self, context: &'static str, parse_content: F) -> Result<T>
+    where
+        F: FnOnce(&mut Self) -> Result<T>,
+        T: Debug,
+    {
+        self.parse_delimited(Token::LParen, Token::RParen, context, parse_content)
+    }
+
+    fn parse_braced<F, T>(&mut self, context: &'static str, parse_content: F) -> Result<T>
+    where
+        F: FnOnce(&mut Self) -> Result<T>,
+        T: Debug,
+    {
+        self.parse_delimited(Token::LBrace, Token::RBrace, context, parse_content)
+    }
+
     /// Returns a Parser given a lexer.
     pub fn from_lexer(lexer: &mut Lexer<Token>) -> Self {
         let mut tokens: VecDeque<Token> =
@@ -107,72 +188,128 @@ impl Parser {
         self.peek_token == *token
     }
 
-    /// Returns an AST Program or an Error string.
-    ///
-    /// <program> ::== <function>
+    /// Parses:
+    /// `<program> ::== { <function-declaration> }`
     fn parse_program(&mut self) -> Result<ast::Program> {
-        let function = self.parse_function()?;
-        Ok(ast::Program(function))
+        let mut functions: Vec<ast::FunctionDeclaration> = Vec::new();
+        // Parses function declarations until token stream
+        // is empty.
+        while !self.tokens.is_empty() {
+            functions.push(self.parse_function_declaration()?);
+        }
+
+        Ok(ast::Program(functions))
     }
 
-    /// Returns an ast::Function or an Error String.
-    ///
-    /// <function> ::= "int" <identifier> "(" "void" ")" <block>
-    fn parse_function(&mut self) -> Result<ast::Function> {
-        if self.current_token_is(&Token::Int) {
+    /// Parses:
+    /// `<variable-declaration> ::= "int" <identifier> [ "=" <exp> ] ";"`
+    fn parse_variable_declaration(&mut self) -> Result<ast::VariableDeclaration> {
+        let name = self.expect_token_then(
+            Token::Int,
+            "Within `parse_variable_declaration`, parsing identifier",
+            |parser| parser.parse_identifier(),
+        )?;
+
+        if self.current_token_is(&Token::Assign) {
+            let initializer = Some(self.parse_delimited(
+                Token::Assign,
+                Token::Semicolon,
+                "Within `parse_variable_declaration`, parsing initializer",
+                |parser| {
+                    let result = parser.parse_expression(0);
+
+                    parser.next_token();
+                    result
+                },
+            )?);
+
+            Ok(ast::VariableDeclaration { name, initializer })
+        } else if self.current_token_is(&Token::Semicolon) {
             self.next_token();
-
-            let identifier = self.parse_identifier()?;
-            //matching: (void)
-            let expected_structure = vec![Token::LParen, Token::Void, Token::RParen];
-
-            // Check if incoming token stream matches the expected_structure
-            for token in expected_structure {
-                if !self.current_token_is(&token) {
-                    return Err(Error::UnexpectedToken {
-                        expected: token.clone(),
-                        found: self.current_token.clone(),
-                        message: Some("within `parse_function`"),
-                    });
-                } else {
-                    self.next_token();
-                }
-            }
-
-            let function_body = self.parse_block()?;
-
-            Ok(ast::Function {
-                name: identifier,
-                body: function_body,
+            Ok(ast::VariableDeclaration {
+                name,
+                initializer: None,
             })
         } else {
             Err(Error::UnexpectedToken {
-                expected: Token::Int,
+                message: "Within `parse_variable_declaration`, expected Initializer of Semicolon"
+                    .into(),
+                expected: Token::Semicolon,
                 found: self.current_token.clone(),
-                message: Some("Within `parse_function`"),
             })
         }
+    }
+
+    /// `<function-declaration> ::= "int" <identifier> "(" <param-list> ")" ( <block> | ";")`
+    fn parse_function_declaration(&mut self) -> Result<ast::FunctionDeclaration> {
+        let name = self.expect_token_then(
+            Token::Int,
+            "Within `parse_function_declaration`, parsing identifier",
+            |parser| parser.parse_identifier(),
+        )?;
+
+        let parameters = self.parse_delimited(
+            Token::LParen,
+            Token::RParen,
+            "Within `parse_function_declaration`, parsing parameter list",
+            |parser| parser.parse_param_list(),
+        )?;
+
+        // We now have either a block or a Semicolon
+        if self.current_token_is(&Token::Semicolon) {
+            Ok(FunctionDeclaration {
+                name,
+                parameters,
+                body: None,
+            })
+        } else {
+            let body = Some(self.parse_block()?);
+
+            Ok(FunctionDeclaration {
+                name,
+                parameters,
+                body,
+            })
+        }
+    }
+
+    /// `<param-list> ::= "void" | "int" <identifier> { "," "int" <identifier> }`
+    fn parse_param_list(&mut self) -> Result<Vec<Identifier>> {
+        if self.current_token_is(&Token::Void) {
+            self.next_token();
+            return Ok(vec![]);
+        }
+
+        let mut params: Vec<Identifier> = Vec::new();
+        let name = self.expect_token_then(Token::Int, "Within `parse_param_list`", |parser| {
+            parser.parse_identifier()
+        })?;
+
+        params.push(name);
+
+        while !self.current_token_is(&Token::RParen) {
+            params.push(self.expect_sequence_then(
+                &[Token::Comma, Token::Int],
+                "Within closure in `parse_param_list`",
+                |parser| parser.parse_identifier(),
+            )?);
+        }
+
+        Ok(params)
     }
 
     /// <block> ::= "{" { <block-item> } "}"
     fn parse_block(&mut self) -> Result<Block> {
-        if self.current_token_is(&Token::LBrace) {
-            self.next_token();
+        self.parse_braced("Within `parse_block`", |parser| {
             let mut blocks = Vec::new();
 
             // FIX: What happens if we dont have an RBrace?
-            while !self.current_token_is(&Token::RBrace) {
-                blocks.push(self.parse_block_item()?);
+            while !parser.current_token_is(&Token::RBrace) {
+                blocks.push(parser.parse_block_item()?);
             }
 
             Ok(Block(blocks))
-        } else {
-            Err(Error::UnexpectedToken {
-                message: Some("Within `parse_block`"),
-                expected: Token::LBrace,
-                found: self.current_token.clone(),
-            })
-        }
+        })
     }
 
     /// <block-item> ::== <statement> | <declaration>
@@ -183,7 +320,7 @@ impl Parser {
         // `Token::Int`, then it's a declaration, otherwise
         // it's a statement.
         if self.current_token_is(&Token::Int) {
-            // This is a declaration
+            // Now we distinguish between variable or function declarations.
             Ok(ast::BlockItem::D(self.parse_declaration()?))
         } else {
             // This is a statement
@@ -191,57 +328,19 @@ impl Parser {
         }
     }
 
-    /// <declaration> ::== "int" <identifier> [ "=" <exp> ] ";"
+    // Distinguishes between variable and function declarations.
     fn parse_declaration(&mut self) -> Result<ast::Declaration> {
-        // This should check whether the identifier in the grammar
-        // rule is followed by an `=` token, which means the
-        // initializer is present, or a `;` token, which means
-        // the initilizar is absent.
-        if let Token::Int = self.current_token {
-            self.next_token();
-            // We must have an identifier now.
-            let name = self.parse_identifier()?;
-
-            // we check if the initializer is present
-            if let Token::Assign = self.current_token {
-                self.next_token();
-                // We now parse an expression.
-                // FIX: Should this be zero?
-                let initializer = Some(self.parse_expression(0)?);
-                self.next_token();
-                if self.current_token_is(&Token::Semicolon) {
-                    self.next_token();
-                    return Ok(ast::Declaration { name, initializer });
-                } else {
-                    return Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_declaration`"),
-                        expected: Token::Semicolon,
-                        found: self.current_token.clone(),
-                    });
-                }
-            }
-
-            // The initializer is absent
-            // We check if the ";" is present
-            if self.current_token_is(&Token::Semicolon) {
-                self.next_token();
-                Ok(ast::Declaration {
-                    name,
-                    initializer: None,
-                })
-            } else {
-                Err(Error::UnexpectedToken {
-                    message: Some("Within `parse_declaration`"),
-                    expected: Token::Semicolon,
-                    found: self.current_token.clone(),
-                })
+        if let Some(third_token) = self.tokens.get(3) {
+            match third_token {
+                Token::LParen => Ok(ast::Declaration::FuncDecl(
+                    self.parse_function_declaration()?,
+                )),
+                _ => Ok(ast::Declaration::VarDecl(
+                    self.parse_variable_declaration()?,
+                )),
             }
         } else {
-            Err(Error::UnexpectedToken {
-                message: Some("Within `parse_declaration`"),
-                expected: Token::Int,
-                found: self.current_token.clone(),
-            })
+            panic!("Something weird is going on here")
         }
     }
 
@@ -302,7 +401,7 @@ impl Parser {
     fn parse_identifier(&mut self) -> Result<ast::Identifier> {
         if let Token::Identifier(s) = self.current_token.clone() {
             self.next_token();
-            Ok(ast::Identifier(s.to_string()))
+            Ok(s.into())
         } else {
             Err(Error::UnexpectedToken {
                 expected: Token::Identifier("identifier name".into()),
@@ -376,13 +475,24 @@ impl Parser {
         }
     }
 
-    /// <factor> ::== <int> \ <identifier> \ <unop> <factor> \ "(" <exp> ")"
+    /// <factor> ::== <int> | <identifier> | <unop> <factor> | "(" <exp> ")"
+    ///             | <identifier> "(" [<argument-list>] ")"
     fn parse_factor(&mut self) -> Result<ast::Expression> {
         match &self.current_token {
             // <int>
             Token::Constant(i) => Ok(ast::Expression::Constant(*i)),
-            Token::Identifier(identifier) => {
-                Ok(ast::Expression::Var(Identifier(identifier.clone())))
+            Token::Identifier(s) => {
+                if !self.next_token_is(&Token::LParen) {
+                    Ok(ast::Expression::Var(s.into()))
+                } else {
+                    let name = self.parse_identifier()?;
+                    let arguments = self
+                        .parse_parenthesized("Within `parse_factor`", |parser| {
+                            parser.parse_argument_list()
+                        })?;
+
+                    Ok(ast::Expression::FunctionCall { name, arguments })
+                }
             }
             // If token is "~" or "-"
             // <unop> <factor>
@@ -394,23 +504,50 @@ impl Parser {
             }
             // "(" <exp> ")"
             Token::LParen => {
-                self.next_token();
-                let inner_expression = self.parse_expression(0);
-                self.next_token();
-                if self.current_token_is(&Token::RParen) {
-                    inner_expression
-                } else {
-                    Err(Error::MalformedFactor {
-                        missing: Some(Token::RParen),
-                        found: self.current_token.clone(),
-                    })
-                }
+                self.parse_parenthesized("HreWithin `parse_factor`", |parser| {
+                    let exp = parser.parse_expression(0);
+                    parser.next_token();
+                    exp
+                })
+                //self.next_token();
+                //let inner_expression = self.parse_expression(0);
+                //self.next_token();
+                //if self.current_token_is(&Token::RParen) {
+                //    inner_expression
+                //} else {
+                //    Err(Error::MalformedFactor {
+                //        missing: Some(Token::RParen),
+                //        found: self.current_token.clone(),
+                //    })
+                //}
             }
             _ => Err(Error::MalformedFactor {
                 missing: None,
                 found: self.current_token.clone(),
             }),
         }
+    }
+
+    /// `<argument-list> ::= <exp> { "," <exp> }`
+    fn parse_argument_list(&mut self) -> Result<Vec<ast::Expression>> {
+        let mut arguments: Vec<ast::Expression> = Vec::new();
+
+        arguments.push(self.parse_expression(0)?);
+        self.next_token();
+
+        while !self.current_token_is(&Token::RParen) {
+            arguments.push(self.expect_token_then(
+                Token::Comma,
+                "Within `parse_argument_list`",
+                |parser| {
+                    let result = parser.parse_expression(0);
+                    parser.next_token();
+                    result
+                },
+            )?)
+        }
+
+        Ok(arguments)
     }
 
     /// Parses the following grammar:
@@ -427,61 +564,50 @@ impl Parser {
     ///             | ";"
     fn parse_statement(&mut self) -> Result<ast::Statement> {
         match &self.current_token {
+            // "return" <exp> ";"
             Token::Return => {
-                self.next_token();
+                let expression = self.parse_delimited(
+                    Token::Return,
+                    Token::Semicolon,
+                    "Within `parse_statement`, parsing RETURN",
+                    |parser| {
+                        let result = parser.parse_expression(0);
+                        parser.next_token();
+                        result
+                    },
+                )?;
 
-                let expression = self.parse_expression(0)?;
-                self.next_token();
-
-                if self.current_token_is(&Token::Semicolon) {
-                    self.next_token();
-                    Ok(ast::Statement::Return(expression))
-                } else {
-                    Err(Error::UnexpectedToken {
-                        expected: Token::Semicolon,
-                        found: self.current_token.clone(),
-                        message: Some("Within `parse_statement`"),
-                    })
-                }
+                Ok(ast::Statement::Return(expression))
             }
             Token::Semicolon => Ok(ast::Statement::Null),
+            // "if" "(" <exp> ")" <statement> ["else" <statement>]
             Token::If => {
+                dbg!("Here");
                 self.next_token();
 
-                if self.current_token_is(&Token::LParen) {
-                    let condition = self.parse_expression(0)?;
+                let condition =
+                    self.parse_parenthesized("Within `parse_statement`, parsing IF", |parser| {
+                        let result = parser.parse_expression(0);
+                        dbg!(&result);
+                        parser.next_token();
+                        result
+                    })?;
 
-                    if self.current_token_is(&Token::RParen) {
+                let then = Box::new(self.parse_statement()?);
+
+                let else_statement: Option<Box<ast::Statement>> =
+                    if self.current_token_is(&Token::Else) {
                         self.next_token();
-                        let then = Box::new(self.parse_statement()?);
-
-                        let else_statement: Option<Box<ast::Statement>> =
-                            if self.current_token_is(&Token::Else) {
-                                self.next_token();
-                                Some(Box::new(self.parse_statement()?))
-                            } else {
-                                None
-                            };
-
-                        Ok(ast::Statement::If {
-                            condition,
-                            then,
-                            else_statement,
-                        })
+                        Some(Box::new(self.parse_statement()?))
                     } else {
-                        Err(Error::UnexpectedToken {
-                            message: Some("Within `parse_statement`"),
-                            expected: Token::RParen,
-                            found: self.current_token.clone(),
-                        })
-                    }
-                } else {
-                    Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_statement`"),
-                        expected: Token::LParen,
-                        found: self.current_token.clone(),
-                    })
-                }
+                        None
+                    };
+
+                Ok(ast::Statement::If {
+                    condition,
+                    then,
+                    else_statement,
+                })
             }
             Token::LBrace => {
                 let block = self.parse_block()?;
@@ -498,7 +624,7 @@ impl Parser {
                     Ok(ast::Statement::Break { label: None })
                 } else {
                     Err(Error::UnexpectedToken {
-                        message: Some("Within `parse_statement`"),
+                        message: Some("Within `parse_statement`, parsing Break"),
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
                     })
@@ -522,23 +648,22 @@ impl Parser {
             // "while" "(" <exp> ")" <statement>
             Token::While => {
                 self.next_token();
-                if self.current_token_is(&Token::LParen) {
-                    let condition = self.parse_expression(0)?;
-                    if self.current_token_is(&Token::RParen) {
-                        self.next_token();
-                        let body = Box::new(self.parse_statement()?);
+                let condition = self.parse_parenthesized(
+                    "Within `parse_statement`, parsing WHILE",
+                    |parser| {
+                        let result = parser.parse_expression(0);
+                        parser.next_token();
+                        result
+                    },
+                )?;
 
-                        Ok(ast::Statement::While {
-                            condition,
-                            body,
-                            identifier: None,
-                        })
-                    } else {
-                        self.error_expected(Token::RParen, Some("Within `parse_statement`"))
-                    }
-                } else {
-                    self.error_expected(Token::LParen, Some("Within `parse_statement`"))
-                }
+                let body = Box::new(self.parse_statement()?);
+
+                Ok(ast::Statement::While {
+                    condition,
+                    body,
+                    identifier: None,
+                })
             }
             // "do" <statement> "while" "(" <exp> ")" ";"
             Token::Do => {
@@ -546,35 +671,18 @@ impl Parser {
 
                 let body = Box::new(self.parse_statement()?);
 
-                if self.current_token_is(&Token::While) {
-                    self.next_token();
-                    if self.current_token_is(&Token::LParen) {
-                        let condition = self.parse_expression(0)?;
+                let condition =
+                    self.parse_parenthesized("Within `parse_statement`, parsing DO", |parser| {
+                        let result = parser.parse_expression(0);
+                        parser.next_token();
+                        result
+                    })?;
 
-                        if self.current_token_is(&Token::RParen) {
-                            self.next_token();
-                            if self.current_token_is(&Token::Semicolon) {
-                                self.next_token();
-                                Ok(ast::Statement::DoWhile {
-                                    body,
-                                    condition,
-                                    identifier: None,
-                                })
-                            } else {
-                                self.error_expected(
-                                    Token::Semicolon,
-                                    Some("Within `parse_stateement`"),
-                                )
-                            }
-                        } else {
-                            self.error_expected(Token::RParen, Some("Within `parse_stateement`"))
-                        }
-                    } else {
-                        self.error_expected(Token::LParen, Some("Within `parse_statement`"))
-                    }
-                } else {
-                    self.error_expected(Token::While, Some("Within `parse_statement`"))
-                }
+                Ok(ast::Statement::While {
+                    condition,
+                    body,
+                    identifier: None,
+                })
             }
             // "for" "(" <for-init> [ <exp> ] ";" [ <exp> ] ")" <statement>
             Token::For => {
@@ -599,8 +707,8 @@ impl Parser {
             }
             _ => {
                 let expression = self.parse_expression(0)?;
-
                 self.next_token();
+                dbg!(&expression);
 
                 if self.current_token_is(&Token::Semicolon) {
                     self.next_token();
@@ -609,7 +717,7 @@ impl Parser {
                     Err(Error::UnexpectedToken {
                         expected: Token::Semicolon,
                         found: self.current_token.clone(),
-                        message: Some("Within `parse_statement`"),
+                        message: Some("Within `parse_statement`, parsing <exp> ';' "),
                     })
                 }
             }
@@ -635,10 +743,10 @@ impl Parser {
         }
     }
 
-    /// <for-init> ::= <declaration> | [ <exp> ] ";"
+    /// `<for-init> ::= <variable-declaration> | [ <exp> ] ";"`
     fn parse_for_init(&mut self) -> Result<ast::ForInit> {
         if self.current_token_is(&Token::Int) {
-            Ok(ast::ForInit::InitDecl(self.parse_declaration()?))
+            Ok(ast::ForInit::InitDecl(self.parse_variable_declaration()?))
         } else {
             Ok(ast::ForInit::InitExp(
                 self.parse_optional_expression(&Token::Semicolon)?,

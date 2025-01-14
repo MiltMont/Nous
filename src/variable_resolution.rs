@@ -19,9 +19,10 @@ use crate::{
 /// identifier.
 #[derive(Default, Debug)]
 pub struct VariableResolution {
-    offset: usize,
+    pub offset: usize,
 }
 
+#[allow(dead_code)]
 impl VariableResolution {
     // TODO: Check if this assignement doesnt conflict with other assignements.
     fn make_temporary_name(&mut self, name: &str) -> String {
@@ -48,7 +49,7 @@ impl VariableResolution {
 #[derive(Debug)]
 pub struct VariableInfo {
     name: String,
-    from_current_block: bool,
+    pub from_current_block: bool,
 }
 
 type VariableMap = HashMap<Identifier, VariableInfo>;
@@ -125,30 +126,32 @@ impl VisitorWithContext<Statement, VariableMap> for VariableResolution {
     }
 }
 
+#[allow(unused_variables)]
 impl VisitorWithContext<Declaration, VariableMap> for VariableResolution {
     fn visit(&mut self, declaration: &mut Declaration, variable_map: &mut VariableMap) {
-        if variable_map.contains_key(&declaration.name)
-            && variable_map
-                .get(&declaration.name)
-                .unwrap()
-                .from_current_block
-        {
-            // FIX: better error reporting.
-            panic!("Duplicate variable declaration.")
-        }
-
-        let unique_name = self.make_temporary_name(&declaration.name.0);
-
-        variable_map.insert(
-            declaration.name.clone(),
-            VariableInfo {
-                name: unique_name.clone(),
-                from_current_block: true,
-            },
-        );
-
-        self.visit(&mut declaration.initializer, variable_map);
-        declaration.name = unique_name.into();
+        todo!()
+        //if variable_map.contains_key(&declaration.name)
+        //    && variable_map
+        //        .get(&declaration.name)
+        //        .unwrap()
+        //        .from_current_block
+        //{
+        //    // FIX: better error reporting.
+        //    panic!("Duplicate variable declaration.")
+        //}
+        //
+        //let unique_name = self.make_temporary_name(&declaration.name.0);
+        //
+        //variable_map.insert(
+        //    declaration.name.clone(),
+        //    VariableInfo {
+        //        name: unique_name.clone(),
+        //        from_current_block: true,
+        //    },
+        //);
+        //
+        //self.visit(&mut declaration.initializer, variable_map);
+        //declaration.name = unique_name.into();
     }
 }
 
@@ -186,6 +189,8 @@ impl VisitorWithContext<Expression, VariableMap> for VariableResolution {
                 self.visit(&mut **exp1, variable_map);
                 self.visit(&mut **exp2, variable_map);
             }
+            #[allow(unused_variables)]
+            Expression::FunctionCall { name, arguments } => todo!(),
         }
     }
 }
@@ -201,7 +206,7 @@ impl VisitorWithContext<Option<Expression>, VariableMap> for VariableResolution 
 impl VisitorWithContext<ForInit, VariableMap> for VariableResolution {
     fn visit(&mut self, item: &mut ForInit, context: &mut VariableMap) {
         match item {
-            ForInit::InitDecl(declaration) => self.visit(declaration, context),
+            ForInit::InitDecl(_declaration) => todo!(),
             ForInit::InitExp(expression) => self.visit(expression, context),
         }
     }
