@@ -303,8 +303,6 @@ impl Parser {
                 blocks.push(parser.parse_block_item()?);
             }
 
-            dbg!(&blocks);
-
             Ok(Block(blocks))
         })
     }
@@ -352,25 +350,17 @@ impl Parser {
     /// and returns the unary operator wrapped in a Result
     /// variant. Otherwise it returns an error message.
     fn parse_unaryop(&mut self) -> Result<ast::UnaryOperator> {
-        match self.current_token {
-            Token::Negation => {
-                self.next_token();
-
-                Ok(ast::UnaryOperator::Negate)
-            }
-            Token::BitComp => {
-                self.next_token();
-
-                Ok(ast::UnaryOperator::Complement)
-            }
-            Token::Not => {
-                self.next_token();
-                Ok(ast::UnaryOperator::Not)
-            }
+        let op = match self.current_token {
+            Token::Negation => Ok(ast::UnaryOperator::Negate),
+            Token::BitComp => Ok(ast::UnaryOperator::Complement),
+            Token::Not => Ok(ast::UnaryOperator::Not),
             _ => Err(Error::NotUnop {
                 found: self.current_token.clone(),
             }),
-        }
+        };
+
+        self.next_token();
+        op
     }
 
     /// Obtains the variant of the current
@@ -562,7 +552,6 @@ impl Parser {
             Token::Semicolon => Ok(ast::Statement::Null),
             // "if" "(" <exp> ")" <statement> ["else" <statement>]
             Token::If => {
-                dbg!("HERE");
                 self.next_token();
 
                 let condition = self
@@ -631,8 +620,6 @@ impl Parser {
 
                 let body = Box::new(self.parse_statement()?);
 
-                dbg!(&body);
-                dbg!(&self.current_token);
                 Ok(ast::Statement::While {
                     condition,
                     body,
@@ -681,8 +668,6 @@ impl Parser {
             }
             _ => {
                 let expression = self.parse_expression(0)?;
-                dbg!(&expression);
-                dbg!(&self.current_token);
 
                 if self.current_token_is(&Token::Semicolon) {
                     self.next_token();
