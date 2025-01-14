@@ -104,23 +104,6 @@ pub enum Val {
     Var(ast::Identifier),
 }
 
-/// Constructs TAC intermediate representation from an ast
-///
-/// ```
-/// # use nous::lexer::Token;
-/// # use logos::Logos;
-/// # use nous::parser::Parser;
-/// # use nous::tac::TAC;
-///
-/// # let file = String::from("int main(void) { return 2; }");
-///
-/// let mut lexer = Token::lexer(&file);
-/// let mut parser = Parser::from_lexer(&mut lexer);
-/// let mut tac = TAC::from(&mut parser);
-///
-/// // Creating a tac program
-/// let tac_program = tac.to_tac_program();
-/// ```
 #[derive(Debug, Clone)]
 pub struct TAC {
     pub source: ast::Program,
