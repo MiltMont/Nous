@@ -20,8 +20,12 @@ pub struct CompilerDriver {
     #[clap(short = 'f', long)]
     file_path: PathBuf,
 
+    /// Tells the driver to invoke the linker or not
+    #[clap(short = 'c')]
+    invoke_linker: bool,
+
     #[command(subcommand)]
-    cmd: Commands,
+    cmd: Option<Commands>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -201,6 +205,48 @@ impl CompilerDriver {
         }
     }
 
+    /// When this is called, the compiler driver should
+    /// first convert the source program to assembly as usual,
+    /// then run the following command to convert the assembly
+    /// program into an object file:
+    ///
+    /// `gcc -c ASSEMBLY_FILE -o OUTPUT_FILE`
+    ///
+    /// The output filename should be the original filename with
+    /// a `.o` suffix. In other words, `-c /path/to/program.c` should
+    /// produce an object file at `/path/to/program.o`.
+    fn call_linker(&self) -> Result<()> {
+        if self.file_path.exists() {
+            let mut output_assembly = PathBuf::from(&self.file_path);
+            output_assembly.set_extension("s");
+            let mut output_object = output_assembly.clone();
+            output_object.set_extension("o");
+            let mut assembly = Assembly::from(self.file_path.clone());
+            assembly.parse_program();
+            assembly_passes(&mut assembly);
+
+            // Writting assembly to /path/to/program.s
+            fs::write(&output_assembly, assembly.program.unwrap().format())?;
+
+            // Run required gcc command.
+            Command::new("gcc")
+                .args([
+                    "-c",
+                    output_assembly.to_str().unwrap(),
+                    "-o",
+                    output_object.to_str().unwrap(),
+                ])
+                .output()
+                .expect("Should create object file");
+
+            Ok(())
+        } else {
+            Err(crate::errors::Error::IoError(io::Error::other(
+                "Failed lexing file, no such file",
+            )))?
+        }
+    }
+
     /// Outputs the token stream.
     fn lex_file(&self) -> Result<()> {
         if self.file_path.exists() {
@@ -265,24 +311,11 @@ impl CompilerDriver {
             // Visiting the program
             assembly_passes(&mut assembly);
 
-            //let mut visitor = AssemblyPass::build(assembly);
-            //visitor.print_instructions(Some("Original instructions"));
-            //visitor.replace_pseudo_registers();
-            //visitor.print_instructions(Some("Replacing pseudo registers"));
-            //visitor.rewrite_mov();
-            //visitor.print_instructions(Some("Rewriting move instructions"));
-            //visitor.rewrite_binop();
-            //visitor.print_instructions(Some("Rewriting binary operators"));
-            //visitor.rewrite_cmp();
-            //visitor.print_instructions(Some("Rewriting cmp operators"));
-
             Ok(())
         } else {
             Err(crate::errors::Error::IoError(io::Error::other(
                 "Failed code generation, no such file",
             )))?
-            // Err(crate::errors::Error::IoError(io::Error::last_os_error()))
-            // Err("Failed parsing file, no such file".to_string())
         }
     }
 
@@ -321,13 +354,19 @@ impl CompilerDriver {
     }
 
     pub fn run(self) -> MResult<()> {
-        match self.cmd {
-            Commands::Lex => self.lex_file()?,
-            Commands::Parse => self.parse_file()?,
-            Commands::CodeGen => self.code_gen()?,
-            Commands::Tac => self.tac_gen()?,
-            Commands::EmitCode => self.emit_code()?,
-            Commands::Validate => self.validate()?,
+        if let Some(comand) = &self.cmd {
+            match comand {
+                Commands::Lex => self.lex_file()?,
+                Commands::Parse => self.parse_file()?,
+                Commands::CodeGen => self.code_gen()?,
+                Commands::Tac => self.tac_gen()?,
+                Commands::EmitCode => self.emit_code()?,
+                Commands::Validate => self.validate()?,
+            }
+        }
+
+        if self.invoke_linker {
+            self.call_linker()?;
         }
         // self.preprocess_file()?;
         // self.compile_preproc_file()?;
