@@ -303,6 +303,8 @@ impl Parser {
                 blocks.push(parser.parse_block_item()?);
             }
 
+            dbg!(&blocks);
+
             Ok(Block(blocks))
         })
     }
@@ -331,7 +333,6 @@ impl Parser {
     //
     // function = "int" identifier "("
     fn parse_declaration(&mut self) -> Result<ast::Declaration> {
-        dbg!(&self.tokens);
         if let Some(third_token) = self.tokens.get(1) {
             match third_token {
                 Token::LParen => Ok(ast::Declaration::FuncDecl(
@@ -561,6 +562,7 @@ impl Parser {
             Token::Semicolon => Ok(ast::Statement::Null),
             // "if" "(" <exp> ")" <statement> ["else" <statement>]
             Token::If => {
+                dbg!("HERE");
                 self.next_token();
 
                 let condition = self
@@ -587,7 +589,6 @@ impl Parser {
             Token::LBrace => {
                 let block = self.parse_block()?;
 
-                self.next_token();
                 Ok(ast::Statement::Compound(block))
             }
             // "break" ;
@@ -623,17 +624,15 @@ impl Parser {
             // "while" "(" <exp> ")" <statement>
             Token::While => {
                 self.next_token();
-                let condition = self.parse_parenthesized(
-                    "Within `parse_statement`, parsing WHILE",
-                    |parser| {
-                        let result = parser.parse_expression(0);
-                        parser.next_token();
-                        result
-                    },
-                )?;
+                let condition = self
+                    .parse_parenthesized("Within `parse_statement`, parsing WHILE", |parser| {
+                        parser.parse_expression(0)
+                    })?;
 
                 let body = Box::new(self.parse_statement()?);
 
+                dbg!(&body);
+                dbg!(&self.current_token);
                 Ok(ast::Statement::While {
                     condition,
                     body,
@@ -683,6 +682,7 @@ impl Parser {
             _ => {
                 let expression = self.parse_expression(0)?;
                 dbg!(&expression);
+                dbg!(&self.current_token);
 
                 if self.current_token_is(&Token::Semicolon) {
                     self.next_token();

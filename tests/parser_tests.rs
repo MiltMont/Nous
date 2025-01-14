@@ -188,3 +188,63 @@ fn test_expr_dec() {
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
 }
+
+#[test]
+fn test_while() {
+    let mut parser = parser_from_path("playground/test_while2.c");
+
+    let nested_while = Statement::While {
+        condition: Expression::Binary(
+            BinaryOperator::LessThan,
+            Box::new(Expression::Var("b".into())),
+            Box::new(Expression::Constant(3)),
+        ),
+        body: Box::new(Statement::Compound(Block(vec![BlockItem::S(
+            Statement::Continue { label: None },
+        )]))),
+        identifier: None,
+    };
+
+    let nested_if = Statement::If {
+        condition: Expression::Binary(
+            BinaryOperator::Equal,
+            Box::new(Expression::Var("a".into())),
+            Box::new(Expression::Constant(2)),
+        ),
+        then: Box::new(Statement::Compound(Block(vec![BlockItem::S(
+            Statement::Break { label: None },
+        )]))),
+        else_statement: None,
+    };
+
+    let parent_while = Statement::While {
+        condition: Expression::Binary(
+            BinaryOperator::LessThan,
+            Box::new(Expression::Var("a".into())),
+            Box::new(Expression::Constant(3)),
+        ),
+        body: Box::new(Statement::Compound(Block(vec![
+            BlockItem::S(nested_while),
+            BlockItem::S(nested_if),
+        ]))),
+        identifier: None,
+    };
+
+    let expected_program = Program(vec![FunctionDeclaration {
+        name: "main".into(),
+        parameters: vec![],
+        body: Some(Block(vec![
+            BlockItem::D(Declaration::VarDecl(VariableDeclaration {
+                name: "a".into(),
+                initializer: Some(Expression::Constant(1)),
+            })),
+            BlockItem::D(Declaration::VarDecl(VariableDeclaration {
+                name: "b".into(),
+                initializer: Some(Expression::Constant(2)),
+            })),
+            BlockItem::S(parent_while),
+        ])),
+    }]);
+
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program);
+}
