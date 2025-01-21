@@ -179,11 +179,6 @@ impl Parser {
         self.current_token == *token
     }
 
-    //fn peek_token_is(&self, token: &Token) -> bool {
-    //    &self.peek_token == token
-    //}
-
-    #[allow(dead_code)]
     fn next_token_is(&self, token: &Token) -> bool {
         self.peek_token == *token
     }

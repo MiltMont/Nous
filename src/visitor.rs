@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 use crate::{
     assembly::Assembly,
@@ -6,6 +6,7 @@ use crate::{
         AllocateStack, ReplacePseudoRegisters, RewriteBinaryOp, RewriteCmp, RewriteMov,
     },
     ast::Program,
+    identifier_resolution::IdentifierResolution,
 };
 
 pub trait Visitor<T> {
@@ -80,11 +81,10 @@ pub fn assembly_passes(assembly: &mut Assembly) {
 
 #[allow(unused_variables)]
 pub fn validation_passes(program: &mut Program) {
-    todo!()
-    //apply_visitor_with_context(
-    //    &mut program.0.body.0,
-    //    VariableResolution::default(),
-    //    &mut HashMap::new(),
-    //);
-    //apply_visitor_with_context(&mut program.0.body.0, LoopLabeling::default(), &mut None);
+    apply_visitor_with_context(
+        &mut program.0,
+        IdentifierResolution::default(),
+        &mut HashMap::new(),
+    );
+    //apply_visitor_with_context(&mut program.0, LoopLabeling::default(), &mut None);
 }

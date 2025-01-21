@@ -29,8 +29,8 @@ pub enum BlockItem {
 impl Debug for BlockItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::S(arg0) => write!(f, "\n{arg0:?}"),
-            Self::D(arg0) => write!(f, "\n{arg0:?}"),
+            Self::S(arg0) => write!(f, "S: {arg0:#?}"),
+            Self::D(arg0) => write!(f, "D: {arg0:#?}"),
         }
     }
 }
@@ -170,23 +170,10 @@ impl Debug for Identifier {
     }
 }
 
-#[allow(dead_code)]
-type FuncitonDefinition = Function;
-
 #[derive(PartialEq, Clone)]
 pub struct Function {
     pub name: Identifier,
     pub body: Block,
-}
-
-impl Debug for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Function(\n\t\tname: {:?} \n\t\tbody: \n\t\t{:#?}\n\t)",
-            &self.name.0, &self.body
-        )
-    }
 }
 
 #[derive(PartialEq, Clone)]
@@ -194,7 +181,7 @@ pub struct Program(pub Vec<FunctionDeclaration>);
 
 impl Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Program(\n\t{:?}\n)", &self.0)
+        write!(f, "Program(\n\t{:#?}\n)", &self.0)
     }
 }
 
