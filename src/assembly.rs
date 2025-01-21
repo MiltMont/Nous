@@ -9,6 +9,7 @@ use crate::{
 pub struct Program(pub Function);
 
 impl Program {
+    #[must_use]
     pub fn format(&self) -> String {
         if env::consts::OS == "linux" {
             format!(
@@ -41,6 +42,7 @@ pub struct Function {
 }
 
 impl Function {
+    #[must_use]
     pub fn format(&self) -> String {
         // In maconame s function names must start with an underscore.
         let name = if env::consts::OS == "macos" {

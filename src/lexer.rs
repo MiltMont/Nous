@@ -153,4 +153,25 @@ impl Token {
             }),
         }
     }
+
+    pub fn is_binary_operator(&self) -> bool {
+        matches!(
+            self,
+            Token::Add
+                | Token::Mul
+                | Token::Div
+                | Token::Negation
+                | Token::Remainder
+                | Token::And
+                | Token::Or
+                | Token::EqualTo
+                | Token::NotEqualTo
+                | Token::LessThan
+                | Token::LessThanOrEq
+                | Token::GreaterThan
+                | Token::GreaterThanOrEq
+                | Token::Assign
+                | Token::QuestionMark // This is a ternary op.
+        )
+    }
 }

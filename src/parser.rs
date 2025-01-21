@@ -60,11 +60,6 @@ impl From<PathBuf> for Parser {
 }
 
 impl Parser {
-    //
-    // TODO: Document which functions consume the current
-    // token in the token stream.
-    //
-
     fn expect_token_then<F, T>(
         &mut self,
         expected: Token,
@@ -228,18 +223,19 @@ impl Parser {
         let name = self.expect_token_then(
             Token::Int,
             "Within `parse_function_declaration`, parsing identifier",
-            |parser| parser.parse_identifier(),
+            Parser::parse_identifier,
         )?;
 
         let parameters = self.parse_delimited(
             Token::LParen,
             Token::RParen,
             "Within `parse_function_declaration`, parsing parameter list",
-            |parser| parser.parse_param_list(),
+            Parser::parse_param_list,
         )?;
 
         // We now have either a block or a Semicolon
         if self.current_token_is(&Token::Semicolon) {
+            self.next_token();
             Ok(FunctionDeclaration {
                 name,
                 parameters,
@@ -274,7 +270,7 @@ impl Parser {
             params.push(self.expect_sequence_then(
                 &[Token::Comma, Token::Int],
                 "Within closure in `parse_param_list`",
-                |parser| parser.parse_identifier(),
+                Parser::parse_identifier,
             )?);
         }
 
@@ -355,7 +351,7 @@ impl Parser {
     /// binary operation
     fn parse_binaryop(&mut self) -> Result<ast::BinaryOperator> {
         match self.current_token {
-            Token::Assign => Ok(ast::BinaryOperator::Equal),
+            Token::Assign | Token::EqualTo => Ok(ast::BinaryOperator::Equal),
             Token::Add => Ok(ast::BinaryOperator::Add),
             Token::Negation => Ok(ast::BinaryOperator::Subtract),
             Token::Mul => Ok(ast::BinaryOperator::Multiply),
@@ -365,7 +361,6 @@ impl Parser {
             Token::LessThanOrEq => Ok(ast::BinaryOperator::LessOrEqual),
             Token::GreaterThan => Ok(ast::BinaryOperator::GreaterThan),
             Token::GreaterThanOrEq => Ok(ast::BinaryOperator::GreaterOrEqual),
-            Token::EqualTo => Ok(ast::BinaryOperator::Equal),
             Token::NotEqualTo => Ok(ast::BinaryOperator::NotEqual),
             Token::And => Ok(ast::BinaryOperator::And),
             Token::Or => Ok(ast::BinaryOperator::Or),
@@ -375,10 +370,11 @@ impl Parser {
         }
     }
 
-    /// Returns an ast::Identifier or an Error String.
+    /// Returns an `ast::Identifier` or an Error String.
     /// Advances the token stream if the current token
     /// is an identifier.
-    /// <identifier> ::== An identifier token
+    ///
+    /// `<identifier> ::== An identifier token`
     fn parse_identifier(&mut self) -> Result<ast::Identifier> {
         if let Token::Identifier(s) = self.current_token.clone() {
             self.next_token();
@@ -400,9 +396,8 @@ impl Parser {
 
         let mut next_token = self.current_token.clone();
 
-        while self.is_binary_operator(&next_token) && next_token.precedence()? >= min_precedence {
+        while next_token.is_binary_operator() && next_token.precedence()? >= min_precedence {
             if matches!(next_token, Token::Assign) {
-                // HACK: Is this correct?
                 self.next_token();
                 let right = self.parse_expression(next_token.precedence()?)?;
                 left = ast::Expression::Assignment(Box::new(left), Box::new(right));
@@ -420,7 +415,7 @@ impl Parser {
                 let right = Box::new(self.parse_expression(next_token.precedence()? + 1)?);
                 left = ast::Expression::Binary(operator, Box::new(left), right);
             }
-            next_token = self.current_token.clone()
+            next_token = self.current_token.clone();
         }
 
         Ok(left)
@@ -458,9 +453,7 @@ impl Parser {
             // <int>
             Token::Constant(_) => self.parse_constant(),
             Token::Identifier(_) => {
-                if !self.next_token_is(&Token::LParen) {
-                    Ok(ast::Expression::Var(self.parse_identifier()?))
-                } else {
+                if self.next_token_is(&Token::LParen) {
                     let name = self.parse_identifier()?;
                     let arguments = self
                         .parse_parenthesized("Within `parse_factor`", |parser| {
@@ -468,6 +461,8 @@ impl Parser {
                         })?;
 
                     Ok(ast::Expression::FunctionCall { name, arguments })
+                } else {
+                    Ok(ast::Expression::Var(self.parse_identifier()?))
                 }
             }
             // If token is "~" or "-"
@@ -501,7 +496,7 @@ impl Parser {
                 Token::Comma,
                 "Within `parse_argument_list`, parsing parameters.",
                 |parser| parser.parse_expression(0),
-            )?)
+            )?);
         }
 
         Ok(arguments)
@@ -700,28 +695,5 @@ impl Parser {
             expected,
             found: self.current_token.clone(),
         })
-    }
-
-    /// Returns true if the current token is a
-    /// binary operator
-    fn is_binary_operator(&self, token: &Token) -> bool {
-        matches!(
-            token,
-            Token::Add
-                | Token::Mul
-                | Token::Div
-                | Token::Negation
-                | Token::Remainder
-                | Token::And
-                | Token::Or
-                | Token::EqualTo
-                | Token::NotEqualTo
-                | Token::LessThan
-                | Token::LessThanOrEq
-                | Token::GreaterThan
-                | Token::GreaterThanOrEq
-                | Token::Assign
-                | Token::QuestionMark // This is a ternary op.
-        )
     }
 }
