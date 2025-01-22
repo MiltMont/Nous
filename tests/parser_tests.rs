@@ -248,3 +248,24 @@ fn test_while() {
 
     assert_eq!(parser.to_ast_program().unwrap(), expected_program);
 }
+
+#[test]
+fn test_declaration_no_body() {
+    let mut parser = parser_from_path("playground/test_function_declaration_no_body.c");
+
+    let func1 = FunctionDeclaration {
+        name: "test1".into(),
+        parameters: vec!["a".into()],
+        body: None,
+    };
+
+    let func2 = FunctionDeclaration {
+        name: "test2".into(),
+        parameters: vec!["a".into(), "b".into()],
+        body: None,
+    };
+
+    let expected_program = Program(vec![func1, func2]);
+
+    assert_eq!(parser.to_ast_program().unwrap(), expected_program);
+}
